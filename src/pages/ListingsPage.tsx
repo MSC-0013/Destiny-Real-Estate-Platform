@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import PropertyCard from '@/components/PropertyCard';
 import { properties } from '@/data/properties';
+import { expandedProperties } from '@/data/expandedProperties';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +14,8 @@ import { Search, Filter, MapPin, X } from 'lucide-react';
 
 const ListingsPage = () => {
   const [searchParams] = useSearchParams();
-  const [filteredProperties, setFilteredProperties] = useState(properties);
+  const allProperties = [...properties, ...expandedProperties];
+  const [filteredProperties, setFilteredProperties] = useState(allProperties);
   const [showFilters, setShowFilters] = useState(false);
   
   const [filters, setFilters] = useState({
@@ -35,7 +37,7 @@ const ListingsPage = () => {
   const propertyTypes = ['Studio', 'Apartment', 'Loft', 'Penthouse', 'Garden Apartment'];
 
   useEffect(() => {
-    let filtered = properties;
+    let filtered = allProperties;
 
     // Location filter
     if (filters.location) {

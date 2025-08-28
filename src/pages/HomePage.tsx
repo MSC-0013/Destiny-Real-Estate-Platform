@@ -80,7 +80,7 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-foreground mb-4">
-              Why Choose RentalRoots?
+              Why Choose Destiny?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               We make finding and renting your perfect home simple, secure, and stress-free
@@ -118,8 +118,8 @@ const HomePage = () => {
             Ready to Find Your Next Home?
           </h2>
           <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of satisfied tenants and landlords who trust RentalRoots 
-            for their rental needs
+             Join thousands of satisfied tenants and landlords who trust Destiny 
+             for their rental needs
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -150,7 +150,7 @@ const HomePage = () => {
                   <Shield className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-xl font-serif font-bold text-gradient">
-                  RentalRoots
+                  Destiny
                 </span>
               </div>
               <p className="text-muted-foreground mb-4 max-w-md">
@@ -181,7 +181,7 @@ const HomePage = () => {
           </div>
           
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 RentalRoots. All rights reserved.</p>
+            <p>&copy; 2024 Destiny. All rights reserved.</p>
           </div>
         </div>
       </footer>
