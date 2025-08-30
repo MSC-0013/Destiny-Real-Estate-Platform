@@ -1,165 +1,300 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Home, Search, Heart, User, MapPin } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import {
+  Home,
+  Building,
+  Hammer,
+  Search,
+  User,
+  LogOut,
+  Menu,
+  X,
+  Heart,
+  MessageCircle,
+  Bell,
+  Settings,
+  HelpCircle,
+  MapPin,
+  Shield
+} from 'lucide-react';
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
-  const isLoggedIn = localStorage.getItem('user');
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
-  const navLinks = [
-    { to: '/', label: 'Home', icon: Home },
-    { to: '/listings', label: 'Browse Properties', icon: Search },
-    { to: '/locations', label: 'Locations', icon: MapPin },
+  const isActive = (path: string) => location.pathname === path;
+
+  const navItems = [
+    { name: 'Home', path: '/', icon: Home },
+    { name: 'Rentals', path: '/listings', icon: Building },
+    { name: 'Buy/Sell', path: '/marketplace', icon: MapPin },
+    { name: 'Construction', path: '/construction', icon: Hammer },
+    { name: 'Neighborhoods', path: '/neighborhoods', icon: Search },
   ];
 
   return (
-    <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
+    <nav className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Home className="w-5 h-5 text-primary-foreground" />
+              <Home className="w-5 h-5 text-white" />
             </div>
-          <span className="text-xl font-serif font-bold text-gradient">
-            Destiny
-          </span>
+            <span className="text-xl font-serif font-bold text-gradient">
+              Rental Roots Hub
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navLinks.map(({ to, label, icon: Icon }) => (
+          <div className="hidden md:flex items-center space-x-1">
+            {navItems.map((item) => (
               <Link
-                key={to}
-                to={to}
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location.pathname === to
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                key={item.path}
+                to={item.path}
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  isActive(item.path)
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{label}</span>
+                <item.icon className="w-4 h-4 mr-2" />
+                {item.name}
               </Link>
             ))}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {isLoggedIn ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/favorites">
-                  <Button variant="ghost" size="sm">
-                    <Heart className="w-4 h-4 mr-2" />
-                    Favorites
-                  </Button>
-                </Link>
-                <Link to="/dashboard">
-                  <Button variant="outline" size="sm">
-                    <User className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    localStorage.removeItem('user');
-                    window.location.href = '/';
-                  }}
-                >
-                  Logout
+            {isAuthenticated ? (
+              <>
+                {/* Notifications */}
+                <Button variant="ghost" size="sm" className="relative">
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    3
+                  </span>
                 </Button>
-              </div>
+
+                {/* Messages */}
+                <Button variant="ghost" size="sm" onClick={() => navigate('/chat')}>
+                  <MessageCircle className="w-4 h-4" />
+                </Button>
+
+                {/* Favorites */}
+                <Button variant="ghost" size="sm" onClick={() => navigate('/favorites')}>
+                  <Heart className="w-4 h-4" />
+                </Button>
+
+                {/* User Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="text-left hidden lg:block">
+                        <div className="text-sm font-medium">{user?.name}</div>
+                        <div className="flex items-center">
+                          <Badge variant={user?.role === 'admin' ? 'destructive' : 'secondary'} className="text-xs">
+                            {user?.role}
+                          </Badge>
+                          {user?.verified && (
+                            <Shield className="w-3 h-3 ml-1 text-success" />
+                          )}
+                        </div>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-background border border-border z-50">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                      <Building className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/help')}>
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      Help Center
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate('/admin')}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin Panel
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
-              <div className="flex items-center space-x-4">
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link to="/register">
-                  <Button className="btn-hero" size="sm">
-                    Get Started
-                  </Button>
-                </Link>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" onClick={() => navigate('/login')}>
+                  Login
+                </Button>
+                <Button className="btn-hero" onClick={() => navigate('/register')}>
+                  Sign Up
+                </Button>
               </div>
             )}
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <Button variant="ghost" size="sm" onClick={toggleMenu}>
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-card border-t border-border">
-              {navLinks.map(({ to, label, icon: Icon }) => (
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navItems.map((item) => (
                 <Link
-                  key={to}
-                  to={to}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    location.pathname === to
-                      ? 'text-primary bg-primary/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
+                    isActive(item.path)
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   }`}
-                  onClick={() => setIsMenuOpen(false)}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{label}</span>
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {item.name}
                 </Link>
               ))}
               
-              <div className="pt-4 space-y-2">
-                {isLoggedIn ? (
-                  <>
-                    <Link to="/favorites" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start">
-                        <Heart className="w-4 h-4 mr-2" />
-                        Favorites
-                      </Button>
-                    </Link>
-                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="outline" className="w-full justify-start">
-                        <User className="w-4 h-4 mr-2" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        localStorage.removeItem('user');
-                        window.location.href = '/';
-                      }}
+              {isAuthenticated ? (
+                <div className="pt-4 border-t border-border">
+                  <div className="px-3 py-2">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{user?.name}</div>
+                        <div className="flex items-center">
+                          <Badge variant={user?.role === 'admin' ? 'destructive' : 'secondary'} className="text-xs">
+                            {user?.role}
+                          </Badge>
+                          {user?.verified && (
+                            <Shield className="w-3 h-3 ml-1 text-success" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md"
                     >
+                      <Building className="w-5 h-5 mr-3" />
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md"
+                    >
+                      <User className="w-5 h-5 mr-3" />
+                      Profile
+                    </Link>
+                    <Link
+                      to="/help"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md"
+                    >
+                      <HelpCircle className="w-5 h-5 mr-3" />
+                      Help Center
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md"
+                      >
+                        <Shield className="w-5 h-5 mr-3" />
+                        Admin Panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center px-3 py-2 text-base font-medium text-destructive hover:bg-muted/50 rounded-md w-full text-left"
+                    >
+                      <LogOut className="w-5 h-5 mr-3" />
                       Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start">
-                        Sign In
-                      </Button>
-                    </Link>
-                    <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                      <Button className="btn-hero w-full justify-start">
-                        Get Started
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="pt-4 border-t border-border space-y-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      navigate('/login');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    className="btn-hero w-full"
+                    onClick={() => {
+                      navigate('/register');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Sign Up
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
