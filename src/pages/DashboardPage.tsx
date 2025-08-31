@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,32 +9,11 @@ import {
   CreditCard, MessageSquare, BarChart3, Users,
   Star, CheckCircle, Clock, DollarSign
 } from 'lucide-react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'tenant' | 'landlord';
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('currentUser');
-    if (!userData) {
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      setUser(JSON.parse(userData));
-    } catch (error) {
-      localStorage.removeItem('currentUser');
-      navigate('/login');
-    }
-  }, [navigate]);
+  const { user } = useAuth();
 
   if (!user) return null;
 

@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Home, User, Building, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Home, User, Building, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, register, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const initialRole = searchParams.get('role') || 'tenant';
   
   const [loginData, setLoginData] = useState({
@@ -26,10 +29,23 @@ const AuthPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: initialRole
+    role: initialRole as 'buyer' | 'seller' | 'tenant' | 'landlord' | 'builder'
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'admin') {
+        navigate('/admin-dashboard');
+      } else if (user.role === 'landlord') {
+        navigate('/landlord-dashboard');
+      } else {
+        navigate('/tenant-dashboard');
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Simple validation
@@ -42,25 +58,36 @@ const AuthPage = () => {
       return;
     }
 
-    // Mock login - in real app, this would call an API
-    const user = {
-      id: '1',
-      name: 'John Doe',
-      email: loginData.email,
-      role: 'tenant'
-    };
-
-    localStorage.setItem('user', JSON.stringify(user));
+    setIsLoading(true);
     
-    toast({
-      title: "Welcome back!",
-      description: "You have been successfully logged in.",
-    });
-
-    navigate('/dashboard');
+    try {
+      const result = await login(loginData.email, loginData.password);
+      
+      if (result.success) {
+        toast({
+          title: "Welcome back!",
+          description: result.message,
+        });
+        // Role-based redirect will be handled by useEffect
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -91,22 +118,38 @@ const AuthPage = () => {
       return;
     }
 
-    // Mock registration - in real app, this would call an API
-    const user = {
-      id: Date.now().toString(),
-      name: registerData.name,
-      email: registerData.email,
-      role: registerData.role
-    };
-
-    localStorage.setItem('user', JSON.stringify(user));
+    setIsLoading(true);
     
-    toast({
-      title: "Account created!",
-      description: "Welcome to RentalRoots. Let's find you the perfect home.",
-    });
-
-    navigate('/dashboard');
+    try {
+      const result = await register({
+        name: registerData.name,
+        email: registerData.email,
+        password: registerData.password,
+        role: registerData.role
+      });
+      
+      if (result.success) {
+        toast({
+          title: "Account created!",
+          description: result.message,
+        });
+        // Role-based redirect will be handled by useEffect
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -119,7 +162,7 @@ const AuthPage = () => {
               <Home className="w-6 h-6 text-primary" />
             </div>
             <span className="text-2xl font-serif font-bold text-white">
-              RentalRoots
+              Destiny
             </span>
           </Link>
         </div>
@@ -180,15 +223,23 @@ const AuthPage = () => {
                     </div>
                   </div>
                   
-                  <Button type="submit" className="w-full btn-hero">
-                    Sign In
+                  <Button type="submit" className="w-full btn-hero" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isLoading ? 'Signing In...' : 'Sign In'}
                   </Button>
                 </form>
                 
-                <div className="text-center">
+                <div className="text-center space-y-2">
                   <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                     Forgot your password?
                   </Link>
+                  <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2">Demo Accounts:</p>
+                    <div className="space-y-1 text-xs">
+                      <p><strong>Admin:</strong> admin@gmail.com / admin123</p>
+                      <p><strong>User:</strong> Use any email to register</p>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -279,8 +330,9 @@ const AuthPage = () => {
                     </div>
                   </div>
                   
-                  <Button type="submit" className="w-full btn-hero">
-                    Create Account
+                  <Button type="submit" className="w-full btn-hero" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isLoading ? 'Creating Account...' : 'Create Account'}
                   </Button>
                 </form>
               </TabsContent>

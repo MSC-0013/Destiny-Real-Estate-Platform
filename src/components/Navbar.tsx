@@ -22,7 +22,7 @@ import {
   X,
   Heart,
   MessageCircle,
-  Bell,
+  Bot,
   Settings,
   HelpCircle,
   MapPin,
@@ -60,7 +60,7 @@ const Navbar = () => {
               <Home className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-serif font-bold text-gradient">
-              Rental Roots Hub
+              Destiny
             </span>
           </Link>
 
@@ -86,17 +86,15 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Notifications */}
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    3
-                  </span>
-                </Button>
-
-                {/* Messages */}
-                <Button variant="ghost" size="sm" onClick={() => navigate('/chat')}>
-                  <MessageCircle className="w-4 h-4" />
+                {/* AI Chat Assistant */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/chat')}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 border-0"
+                >
+                  <Bot className="w-4 h-4 mr-2" />
+                  AI Assistant
                 </Button>
 
                 {/* Favorites */}
@@ -131,7 +129,15 @@ const Navbar = () => {
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <DropdownMenuItem onClick={() => {
+                      if (user?.role === 'admin') {
+                        navigate('/admin-dashboard');
+                      } else if (user?.role === 'landlord') {
+                        navigate('/landlord-dashboard');
+                      } else {
+                        navigate('/tenant-dashboard');
+                      }
+                    }}>
                       <Building className="mr-2 h-4 w-4" />
                       Dashboard
                     </DropdownMenuItem>
@@ -146,7 +152,7 @@ const Navbar = () => {
                     {isAdmin && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <DropdownMenuItem onClick={() => navigate('/admin-dashboard')}>
                           <Shield className="mr-2 h-4 w-4" />
                           Admin Panel
                         </DropdownMenuItem>
@@ -226,14 +232,22 @@ const Navbar = () => {
                   </div>
                   
                   <div className="space-y-1">
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md"
+                    <button
+                      onClick={() => {
+                        if (user?.role === 'admin') {
+                          navigate('/admin-dashboard');
+                        } else if (user?.role === 'landlord') {
+                          navigate('/landlord-dashboard');
+                        } else {
+                          navigate('/tenant-dashboard');
+                        }
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md w-full text-left"
                     >
                       <Building className="w-5 h-5 mr-3" />
                       Dashboard
-                    </Link>
+                    </button>
                     <Link
                       to="/profile"
                       onClick={() => setIsMobileMenuOpen(false)}
@@ -252,7 +266,7 @@ const Navbar = () => {
                     </Link>
                     {isAdmin && (
                       <Link
-                        to="/admin"
+                        to="/admin-dashboard"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md"
                       >

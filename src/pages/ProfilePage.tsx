@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -14,25 +14,18 @@ import {
   CreditCard, Bell, Shield, Download,
   Edit, Star, Home, DollarSign
 } from 'lucide-react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'tenant' | 'landlord';
-  phone?: string;
-  location?: string;
-  joinDate?: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, updateProfile, logout } = useAuth();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     location: ''
   });
 
@@ -43,40 +36,24 @@ const ProfilePage = () => {
     pushNotifications: true
   });
 
-  useEffect(() => {
-    const userData = localStorage.getItem('currentUser');
-    if (!userData) {
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setFormData({
-        name: parsedUser.name || '',
-        email: parsedUser.email || '',
-        phone: parsedUser.phone || '',
-        location: parsedUser.location || ''
-      });
-    } catch (error) {
-      localStorage.removeItem('currentUser');
-      navigate('/login');
-    }
-  }, [navigate]);
-
   const handleSaveProfile = () => {
     if (user) {
-      const updatedUser = { ...user, ...formData };
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      updateProfile(formData);
       setIsEditing(false);
+      toast({
+        title: "Profile updated!",
+        description: "Your profile has been successfully updated.",
+      });
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('currentUser');
+    logout();
     navigate('/');
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
   };
 
   const bookingHistory = [

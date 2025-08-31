@@ -2,6 +2,9 @@ import { Heart, MapPin, Users, Calendar, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { useWishlist } from '@/contexts/WishlistContext';
+import { useToast } from '@/hooks/use-toast';
+import { Property as PropertyType } from '@/data/properties';
 
 interface Property {
   id: string;
@@ -22,16 +25,33 @@ interface Property {
 }
 
 interface PropertyCardProps {
-  property: Property;
+  property: PropertyType;
   onToggleFavorite?: (id: string) => void;
   isFavorite?: boolean;
 }
 
-const PropertyCard = ({ property, onToggleFavorite, isFavorite = false }: PropertyCardProps) => {
+const PropertyCard = ({ property }: PropertyCardProps) => {
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { toast } = useToast();
+  const isFavorite = isInWishlist(property.id);
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onToggleFavorite?.(property.id);
+    
+    if (isFavorite) {
+      removeFromWishlist(property.id);
+      toast({
+        title: "Removed from Wishlist",
+        description: `${property.title} has been removed from your wishlist.`,
+      });
+    } else {
+      addToWishlist(property);
+      toast({
+        title: "Added to Wishlist",
+        description: `${property.title} has been added to your wishlist.`,
+      });
+    }
   };
 
   return (

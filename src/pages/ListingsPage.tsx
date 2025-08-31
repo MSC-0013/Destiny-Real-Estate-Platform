@@ -22,8 +22,8 @@ const ListingsPage = () => {
     location: searchParams.get('location') || '',
     priceRange: [0, 5000],
     duration: searchParams.get('duration') || '',
-    guests: searchParams.get('guests') || '',
-    propertyType: '',
+    guests: searchParams.get('guests') || 'any',
+    propertyType: 'all',
     amenities: [] as string[],
     verified: false,
     available: true
@@ -60,13 +60,13 @@ const ListingsPage = () => {
     }
 
     // Guests filter
-    if (filters.guests) {
+    if (filters.guests && filters.guests !== 'any') {
       const guestCount = parseInt(filters.guests) || 1;
       filtered = filtered.filter(property => property.guests >= guestCount);
     }
 
     // Property type filter
-    if (filters.propertyType) {
+    if (filters.propertyType && filters.propertyType !== 'all') {
       filtered = filtered.filter(property => property.type === filters.propertyType);
     }
 
@@ -104,8 +104,8 @@ const ListingsPage = () => {
       location: '',
       priceRange: [0, 5000],
       duration: '',
-      guests: '',
-      propertyType: '',
+      guests: 'any',
+      propertyType: 'all',
       amenities: [],
       verified: false,
       available: true
@@ -115,8 +115,8 @@ const ListingsPage = () => {
   const activeFiltersCount = 
     (filters.location ? 1 : 0) +
     (filters.duration ? 1 : 0) +
-    (filters.guests ? 1 : 0) +
-    (filters.propertyType ? 1 : 0) +
+    (filters.guests && filters.guests !== 'any' ? 1 : 0) +
+    (filters.propertyType && filters.propertyType !== 'all' ? 1 : 0) +
     filters.amenities.length +
     (filters.verified ? 1 : 0);
 
@@ -207,7 +207,7 @@ const ListingsPage = () => {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Types</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
                       {propertyTypes.map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
@@ -226,7 +226,7 @@ const ListingsPage = () => {
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any</SelectItem>
+                      <SelectItem value="any">Any</SelectItem>
                       <SelectItem value="1">1 Guest</SelectItem>
                       <SelectItem value="2">2 Guests</SelectItem>
                       <SelectItem value="3">3 Guests</SelectItem>
@@ -285,12 +285,23 @@ const ListingsPage = () => {
                       />
                     </Badge>
                   )}
-                  {filters.propertyType && (
+                  {filters.propertyType && filters.propertyType !== 'all' && (
                     <Badge variant="secondary" className="px-3 py-1">
                       {filters.propertyType}
                       <X
                         className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setFilters(prev => ({ ...prev, propertyType: '' }))}
+                        onClick={() => setFilters(prev => ({ ...prev, propertyType: 'all' }))}
+                      />
+                    </Badge>
+                  )}
+                  {filters.guests && filters.guests !== 'any' && (
+                    <Badge variant="secondary" className="px-3 py-1">
+                      {filters.guests === '1' ? '1 Guest' : 
+                       filters.guests === '5' ? '5+ Guests' : 
+                       `${filters.guests} Guests`}
+                      <X
+                        className="w-3 h-3 ml-2 cursor-pointer"
+                        onClick={() => setFilters(prev => ({ ...prev, guests: 'any' }))}
                       />
                     </Badge>
                   )}

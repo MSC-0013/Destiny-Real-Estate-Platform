@@ -4,8 +4,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { WishlistProvider } from "./contexts/WishlistContext";
+import { OrdersProvider } from "./contexts/OrdersContext";
 import { useEffect } from "react";
 import { initializeDefaultData } from "./utils/localStorage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -13,6 +16,9 @@ import ListingsPage from "./pages/ListingsPage";
 import AuthPage from "./pages/AuthPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import DashboardPage from "./pages/DashboardPage";
+import TenantDashboard from "./pages/TenantDashboard";
+import LandlordDashboard from "./pages/LandlordDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import HelpPage from "./pages/HelpPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
@@ -41,10 +47,12 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <WishlistProvider>
+          <OrdersProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
             <Routes>
               {/* Main Routes */}
               <Route path="/" element={<HomePage />} />
@@ -56,19 +64,58 @@ const App = () => {
               {/* Property Routes */}
               <Route path="/property/:id" element={<PropertyDetailPage />} />
               
-              {/* User Routes */}
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/favorites" element={<FavoritesPage />} />
-              <Route path="/chat" element={<ChatPage />} />
+              {/* User Routes - Protected */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant-dashboard" element={
+                <ProtectedRoute>
+                  <TenantDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/landlord-dashboard" element={
+                <ProtectedRoute>
+                  <LandlordDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin-dashboard" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/favorites" element={
+                <ProtectedRoute>
+                  <FavoritesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/chat" element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              } />
               
               {/* Auth Routes */}
               <Route path="/login" element={<AuthPage />} />
               <Route path="/register" element={<AuthPage />} />
               
               {/* Admin Routes */}
-              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              } />
               
               {/* Help & Info Routes */}
               <Route path="/help" element={<HelpPage />} />
@@ -80,8 +127,10 @@ const App = () => {
               {/* Catch-all route - MUST be last */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+              </BrowserRouter>
+            </TooltipProvider>
+          </OrdersProvider>
+        </WishlistProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
