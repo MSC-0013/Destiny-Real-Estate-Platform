@@ -35,6 +35,7 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import BlogPage from "./pages/BlogPage";
 import CareersPage from "./pages/CareersPage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,11 @@ const App = () => {
               
               {/* Property Routes */}
               <Route path="/property/:id" element={<PropertyDetailPage />} />
+              <Route path="/checkout/:id" element={
+                <ProtectedRoute>
+                  <CheckoutPage />
+                </ProtectedRoute>
+              } />
               
               {/* User Routes - Protected */}
               <Route path="/dashboard" element={

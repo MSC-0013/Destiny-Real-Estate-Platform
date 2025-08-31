@@ -1,134 +1,174 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { 
-  Home, Calendar, Heart, Star, MapPin, Phone, Mail,
-  CheckCircle, Clock, DollarSign, Bell, MessageSquare,
-  Search, Filter, Eye, CreditCard, FileText
+  Home, Building, Calendar, Star, MapPin, Users, 
+  Plus, Search, Filter, Heart, Eye, Edit, Trash2,
+  TrendingUp, DollarSign, Clock, CheckCircle, X,
+  Hammer, FileText, CreditCard, Shield, User, Bed, Bath
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { allProperties } from '@/data/expandedProperties';
+import type { ExpandedProperty } from '@/data/expandedProperties';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+
+interface Booking {
+  id: string;
+  propertyId: string;
+  property: ExpandedProperty;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+  paymentStatus: 'pending' | 'partial' | 'completed';
+  createdAt: string;
+}
+
+interface ConstructionRequest {
+  id: string;
+  propertyType: string;
+  location: string;
+  budget: number;
+  timeline: string;
+  status: 'pending' | 'approved' | 'in-progress' | 'completed';
+  createdAt: string;
+}
 
 const TenantDashboard = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [activeBookings, setActiveBookings] = useState([]);
-  const [favoriteProperties, setFavoriteProperties] = useState([]);
-  const [recentSearches, setRecentSearches] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [showAddProperty, setShowAddProperty] = useState(false);
+  const [showConstructionForm, setShowConstructionForm] = useState(false);
 
-  useEffect(() => {
-    // Load tenant-specific data
-    loadTenantData();
-  }, []);
+  // Mock data - in real app this would come from API
+  const [bookings, setBookings] = useState<Booking[]>([
+    {
+      id: 'booking-1',
+      propertyId: 'mum-001',
+      property: allProperties[0],
+      startDate: '2024-02-01',
+      endDate: '2024-03-01',
+      totalAmount: 85000,
+      status: 'confirmed',
+      paymentStatus: 'partial',
+      createdAt: '2024-01-15'
+    },
+    {
+      id: 'booking-2',
+      propertyId: 'blr-001',
+      property: allProperties[4],
+      startDate: '2024-02-15',
+      endDate: '2024-03-15',
+      totalAmount: 65000,
+      status: 'pending',
+      paymentStatus: 'pending',
+      createdAt: '2024-01-20'
+    }
+  ]);
 
-  const loadTenantData = () => {
-    // Mock data for tenant dashboard
-    setActiveBookings([
-      {
-        id: '1',
-        property: 'Modern 2BHK Apartment',
-        location: 'Bandra West, Mumbai',
-        rent: '₹45,000/month',
-        status: 'Active',
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-        landlord: 'Rajesh Sharma',
-        image: '/src/assets/property-1.jpg'
-      },
-      {
-        id: '2',
-        property: 'Luxury Studio',
-        location: 'Koramangala, Bangalore',
-        rent: '₹35,000/month',
-        status: 'Pending',
-        startDate: '2024-04-01',
-        endDate: '2025-03-31',
-        landlord: 'Priya Patel',
-        image: '/src/assets/property-2.jpg'
-      }
-    ]);
+  const [constructionRequests, setConstructionRequests] = useState<ConstructionRequest[]>([
+    {
+      id: 'construction-1',
+      propertyType: 'Residential Villa',
+      location: 'Mumbai, Maharashtra',
+      budget: 25000000,
+      timeline: '12-18 months',
+      status: 'pending',
+      createdAt: '2024-01-10'
+    }
+  ]);
 
-    setFavoriteProperties([
-      {
-        id: '3',
-        title: 'Spacious 3BHK Villa',
-        location: 'Whitefield, Bangalore',
-        price: '₹65,000/month',
-        image: '/src/assets/property-3.jpg',
-        rating: 4.8,
-        verified: true
-      },
-      {
-        id: '4',
-        title: 'Cozy 1BHK Near Metro',
-        location: 'Gurgaon, Delhi NCR',
-        price: '₹28,000/month',
-        image: '/src/assets/property-1.jpg',
-        rating: 4.5,
-        verified: true
-      }
-    ]);
+  const [favoriteProperties, setFavoriteProperties] = useState<ExpandedProperty[]>(
+    allProperties.slice(0, 3)
+  );
 
-    setRecentSearches([
-      'Mumbai 2BHK under ₹50,000',
-      'Bangalore Tech Parks nearby',
-      'Delhi Metro connectivity',
-      'Pune IT corridors'
-    ]);
-  };
-
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'search':
-        navigate('/listings');
-        break;
-      case 'favorites':
-        navigate('/favorites');
-        break;
-      case 'payments':
-        toast({
-          title: "Payment Center",
-          description: "Redirecting to payment management...",
-        });
-        break;
-      case 'support':
-        navigate('/help');
-        break;
-      default:
-        break;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'active': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'partial': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getConstructionStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'in-progress': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = booking.property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         booking.property.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || booking.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalSpent = bookings
+    .filter(booking => booking.status === 'completed')
+    .reduce((sum, booking) => sum + booking.totalAmount, 0);
+
+  const activeBookings = bookings.filter(booking => 
+    booking.status === 'confirmed' || booking.status === 'active'
+  ).length;
+
+  const pendingPayments = bookings
+    .filter(booking => booking.paymentStatus !== 'completed')
+    .reduce((sum, booking) => sum + (booking.totalAmount * 0.5), 0);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Header */}
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                Welcome back, {user?.name}! 🏡
+              <h1 className="text-3xl font-serif font-bold text-foreground mb-2">
+                Welcome back, {user?.name}!
               </h1>
               <p className="text-lg text-muted-foreground">
-                Your rental journey dashboard - Find, Book, Live
+                Manage your rentals, bookings, and construction projects
               </p>
             </div>
-            <div className="hidden md:flex space-x-3">
-              <Button onClick={() => handleQuickAction('search')} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
-                <Search className="w-4 h-4 mr-2" />
-                Find Properties
+            <div className="flex space-x-3">
+              <Button 
+                onClick={() => setShowConstructionForm(true)}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+              >
+                <Hammer className="w-4 h-4 mr-2" />
+                New Construction
               </Button>
-              <Button variant="outline" onClick={() => handleQuickAction('support')}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Get Help
+              <Button 
+                onClick={() => setShowAddProperty(true)}
+                className="btn-hero"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Property
               </Button>
             </div>
           </div>
@@ -136,157 +176,221 @@ const TenantDashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-green-400 to-green-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-100">Active Rentals</CardTitle>
-              <Home className="h-5 w-5 text-green-100" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{activeBookings.filter(b => b.status === 'Active').length}</div>
-              <p className="text-xs text-green-100">Currently living in</p>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Active Bookings</p>
+                  <p className="text-2xl font-bold">{activeBookings}</p>
+                </div>
+                <Calendar className="w-8 h-8 text-blue-600" />
+              </div>
             </CardContent>
           </Card>
-          
-          <Card className="bg-gradient-to-br from-purple-400 to-purple-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-100">Saved Properties</CardTitle>
-              <Heart className="h-5 w-5 text-purple-100" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{favoriteProperties.length}</div>
-              <p className="text-xs text-purple-100">In your wishlist</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-orange-400 to-red-500 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-orange-100">Monthly Rent</CardTitle>
-              <DollarSign className="h-5 w-5 text-orange-100" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">₹45,000</div>
-              <p className="text-xs text-orange-100">Current month</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-cyan-400 to-blue-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-cyan-100">Tenant Score</CardTitle>
-              <Star className="h-5 w-5 text-cyan-100" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">4.8</div>
-              <p className="text-xs text-cyan-100">Excellent rating</p>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Button 
-            variant="outline" 
-            className="h-24 flex-col bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 border-2 border-gray-200 hover:border-blue-300"
-            onClick={() => handleQuickAction('search')}
-          >
-            <Search className="w-8 h-8 mb-2 text-blue-600" />
-            <span className="text-sm font-medium">Find Properties</span>
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="h-24 flex-col bg-white hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 border-2 border-gray-200 hover:border-purple-300"
-            onClick={() => handleQuickAction('favorites')}
-          >
-            <Heart className="w-8 h-8 mb-2 text-purple-600" />
-            <span className="text-sm font-medium">My Favorites</span>
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="h-24 flex-col bg-white hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 border-2 border-gray-200 hover:border-green-300"
-            onClick={() => handleQuickAction('payments')}
-          >
-            <CreditCard className="w-8 h-8 mb-2 text-green-600" />
-            <span className="text-sm font-medium">Payments</span>
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="h-24 flex-col bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-red-50 border-2 border-gray-200 hover:border-orange-300"
-            onClick={() => handleQuickAction('support')}
-          >
-            <MessageSquare className="w-8 h-8 mb-2 text-orange-600" />
-            <span className="text-sm font-medium">Get Support</span>
-          </Button>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Spent</p>
+                  <p className="text-2xl font-bold">₹{totalSpent.toLocaleString()}</p>
+                </div>
+                <DollarSign className="w-8 h-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
+                  <p className="text-2xl font-bold">₹{pendingPayments.toLocaleString()}</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Construction Projects</p>
+                  <p className="text-2xl font-bold">{constructionRequests.length}</p>
+                </div>
+                <Building className="w-8 h-8 text-purple-600" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="rentals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm">
-            <TabsTrigger value="rentals" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white">
-              My Rentals
-            </TabsTrigger>
-            <TabsTrigger value="favorites" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-              Saved Properties
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
-              Payment History
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white">
-              My Profile
-            </TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+            <TabsTrigger value="favorites">Favorites</TabsTrigger>
+            <TabsTrigger value="construction">Construction</TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="rentals">
-            <Card className="bg-white shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center">
-                  <Home className="w-5 h-5 mr-2" />
-                  Current Rentals
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {activeBookings.map((booking) => (
-                    <div key={booking.id} className="flex items-center justify-between p-6 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-gradient-to-r from-gray-50 to-white">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-lg flex items-center justify-center">
-                          <Home className="w-8 h-8 text-white" />
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Bookings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Recent Bookings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {bookings.slice(0, 3).map((booking) => (
+                      <div key={booking.id} className="flex items-center space-x-4 p-3 bg-muted rounded-lg">
+                        <img 
+                          src={booking.property.image} 
+                          alt={booking.property.title}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-semibold">{booking.property.title}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                          </p>
+                          <Badge className={getStatusColor(booking.status)}>
+                            {booking.status}
+                          </Badge>
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-lg text-gray-900">{booking.property}</h4>
-                          <div className="flex items-center text-gray-600 mt-1">
+                        <div className="text-right">
+                          <p className="font-semibold">₹{booking.totalAmount.toLocaleString()}</p>
+                          <Badge className={getPaymentStatusColor(booking.paymentStatus)}>
+                            {booking.paymentStatus}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Construction Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Building className="w-5 h-5 mr-2" />
+                    Construction Projects
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {constructionRequests.map((request) => (
+                      <div key={request.id} className="p-3 bg-muted rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold">{request.propertyType}</h4>
+                          <Badge className={getConstructionStatusColor(request.status)}>
+                            {request.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{request.location}</p>
+                        <div className="flex justify-between text-sm">
+                          <span>Budget: ₹{request.budget.toLocaleString()}</span>
+                          <span>Timeline: {request.timeline}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Bookings Tab */}
+          <TabsContent value="bookings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Bookings</CardTitle>
+                <div className="flex space-x-3">
+                  <Input
+                    placeholder="Search bookings..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                  />
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {filteredBookings.map((booking) => (
+                    <div key={booking.id} className="border rounded-lg p-4">
+                      <div className="flex items-start space-x-4">
+                        <img 
+                          src={booking.property.image} 
+                          alt={booking.property.title}
+                          className="w-24 h-24 object-cover rounded-lg"
+                        />
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">{booking.property.title}</h3>
+                          <p className="text-muted-foreground flex items-center mb-2">
                             <MapPin className="w-4 h-4 mr-1" />
-                            <span className="text-sm">{booking.location}</span>
-                          </div>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <Badge 
-                              variant={booking.status === 'Active' ? 'default' : 'secondary'} 
-                              className={booking.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'}
-                            >
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              {booking.status}
-                            </Badge>
-                            <span className="text-sm text-gray-500">
-                              Landlord: {booking.landlord}
+                            {booking.property.location}, {booking.property.city}
+                          </p>
+                          <div className="flex items-center space-x-6 text-sm text-muted-foreground mb-3">
+                            <span className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center">
+                              <Users className="w-4 h-4 mr-1" />
+                              {booking.property.guests} guests
+                            </span>
+                            <span className="flex items-center">
+                              <Bed className="w-4 h-4 mr-1" />
+                              {booking.property.bedrooms} bed
                             </span>
                           </div>
+                          <div className="flex items-center space-x-3">
+                            <Badge className={getStatusColor(booking.status)}>
+                              {booking.status}
+                            </Badge>
+                            <Badge className={getPaymentStatusColor(booking.paymentStatus)}>
+                              {booking.paymentStatus}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-xl text-gray-900">{booking.rent}</p>
-                        <p className="text-sm text-gray-500">
-                          {booking.startDate} to {booking.endDate}
-                        </p>
-                        <div className="flex space-x-2 mt-3">
-                          <Button size="sm" variant="outline">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Phone className="w-4 h-4 mr-1" />
-                            Contact
-                          </Button>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary mb-2">
+                            ₹{booking.totalAmount.toLocaleString()}
+                          </p>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -295,159 +399,209 @@ const TenantDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="favorites">
-            <Card className="bg-white shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center">
-                  <Heart className="w-5 h-5 mr-2" />
-                  Saved Properties ({favoriteProperties.length})
-                </CardTitle>
+
+          {/* Favorites Tab */}
+          <TabsContent value="favorites" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Favorite Properties</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {favoriteProperties.map((property) => (
-                    <div key={property.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white">
-                      <div className="h-48 bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-                        <Home className="w-12 h-12 text-white" />
+                    <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="relative">
+                        <img 
+                          src={property.image} 
+                          alt={property.title}
+                          className="w-full h-48 object-cover"
+                        />
+                        <Badge className="absolute top-4 left-4 bg-primary text-white">
+                          {property.type}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-4 right-4 bg-white/90 hover:bg-white"
+                        >
+                          <Heart className="w-4 h-4 text-red-500 fill-current" />
+                        </Button>
                       </div>
-                      <div className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-lg">{property.title}</h4>
-                          {property.verified && (
-                            <Badge className="bg-green-500">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Verified
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center text-gray-600 mb-2">
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
+                        <p className="text-muted-foreground flex items-center mb-3">
                           <MapPin className="w-4 h-4 mr-1" />
-                          <span className="text-sm">{property.location}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xl text-gray-900">{property.price}</span>
+                          {property.location}, {property.city}
+                        </p>
+                        <div className="flex justify-between items-center mb-3">
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <span className="flex items-center">
+                              <Users className="w-4 h-4 mr-1" />
+                              {property.guests}
+                            </span>
+                            <span className="flex items-center">
+                              <Bed className="w-4 h-4 mr-1" />
+                              {property.bedrooms}
+                            </span>
+                            <span className="flex items-center">
+                              <Bath className="w-4 h-4 mr-1" />
+                              {property.bathrooms}
+                            </span>
+                          </div>
                           <div className="flex items-center">
                             <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                            <span className="text-sm">{property.rating}</span>
+                            <span className="font-medium">{property.rating}</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2 mt-4">
-                          <Button size="sm" className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600">
+                        <div className="text-2xl font-bold text-primary mb-3">
+                          ₹{property.price.toLocaleString()}
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button className="flex-1">
+                            <Eye className="w-4 h-4 mr-1" />
                             View Details
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Heart className="w-4 h-4" />
+                          <Button variant="outline">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            Book Now
                           </Button>
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="payments">
-            <Card className="bg-white shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Payment History
+
+          {/* Construction Tab */}
+          <TabsContent value="construction" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Construction Projects</span>
+                  <Button onClick={() => setShowConstructionForm(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Project
+                  </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { date: '2024-03-01', amount: '₹45,000', status: 'Paid', property: 'Modern 2BHK Apartment' },
-                    { date: '2024-02-01', amount: '₹45,000', status: 'Paid', property: 'Modern 2BHK Apartment' },
-                    { date: '2024-01-01', amount: '₹45,000', status: 'Paid', property: 'Modern 2BHK Apartment' }
-                  ].map((payment, index) => (
-                    <div key={index} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50">
-                      <div>
-                        <p className="font-semibold">{payment.property}</p>
-                        <p className="text-sm text-gray-600">{payment.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{payment.amount}</p>
-                        <Badge className="bg-green-500">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          {payment.status}
+                  {constructionRequests.map((request) => (
+                    <div key={request.id} className="border rounded-lg p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold mb-2">{request.propertyType}</h3>
+                          <p className="text-muted-foreground mb-2">{request.location}</p>
+                          <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+                            <span>Budget: ₹{request.budget.toLocaleString()}</span>
+                            <span>Timeline: {request.timeline}</span>
+                            <span>Created: {new Date(request.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <Badge className={getConstructionStatusColor(request.status)}>
+                          {request.status}
                         </Badge>
                       </div>
+                      
+                      <div className="flex space-x-3">
+                        <Button variant="outline">
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Details
+                        </Button>
+                        <Button variant="outline">
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit Project
+                        </Button>
+                        <Button variant="outline">
+                          <FileText className="w-4 h-4 mr-1" />
+                          View Contract
+                        </Button>
+                        <Button variant="outline">
+                          <CreditCard className="w-4 h-4 mr-1" />
+                          Payment Status
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="profile">
-            <Card className="bg-white shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center">
-                  <FileText className="w-5 h-5 mr-2" />
-                  Tenant Profile
-                </CardTitle>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
-                    <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-600 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-white">{user?.name?.charAt(0)}</span>
+                    <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center">
+                      <User className="w-10 h-10 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold">{user?.name}</h3>
-                      <p className="text-gray-600">{user?.email}</p>
-                      <Badge variant="secondary">Verified Tenant</Badge>
+                      <h3 className="text-xl font-semibold">{user?.name}</h3>
+                      <p className="text-muted-foreground">{user?.email}</p>
+                      <Badge variant="outline">{user?.role}</Badge>
                     </div>
                   </div>
-                  
+
+                  <Separator />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h4 className="font-semibold text-lg">Rental Preferences</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Preferred Budget:</span>
-                          <span className="font-medium">₹30,000 - ₹50,000</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Preferred Areas:</span>
-                          <span className="font-medium">Mumbai, Bangalore</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Property Type:</span>
-                          <span className="font-medium">2BHK, 3BHK</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <h4 className="font-semibold text-lg">Tenant Score</h4>
+                    <div>
+                      <h4 className="font-semibold mb-3">Personal Information</h4>
                       <div className="space-y-3">
                         <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Payment History</span>
-                            <span className="text-sm font-medium">98%</span>
-                          </div>
-                          <Progress value={98} className="h-2" />
+                          <Label>Full Name</Label>
+                          <Input value={user?.name || ''} readOnly />
                         </div>
                         <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Property Care</span>
-                            <span className="text-sm font-medium">95%</span>
-                          </div>
-                          <Progress value={95} className="h-2" />
+                          <Label>Email</Label>
+                          <Input value={user?.email || ''} readOnly />
                         </div>
                         <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Communication</span>
-                            <span className="text-sm font-medium">92%</span>
-                          </div>
-                          <Progress value={92} className="h-2" />
+                          <Label>Phone</Label>
+                          <Input value={user?.phone || 'Not provided'} readOnly />
                         </div>
                       </div>
                     </div>
+
+                    <div>
+                      <h4 className="font-semibold mb-3">Account Statistics</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between p-3 bg-muted rounded-lg">
+                          <span>Total Bookings</span>
+                          <span className="font-semibold">{bookings.length}</span>
+                        </div>
+                        <div className="flex justify-between p-3 bg-muted rounded-lg">
+                          <span>Active Projects</span>
+                          <span className="font-semibold">{constructionRequests.filter(r => r.status === 'in-progress').length}</span>
+                        </div>
+                        <div className="flex justify-between p-3 bg-muted rounded-lg">
+                          <span>Member Since</span>
+                          <span className="font-semibold">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <Button>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                    <Button variant="outline">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Security Settings
+                    </Button>
+                    <Button variant="outline">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Documents
+                    </Button>
                   </div>
                 </div>
               </CardContent>

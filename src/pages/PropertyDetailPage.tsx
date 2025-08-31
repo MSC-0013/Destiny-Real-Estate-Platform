@@ -11,17 +11,17 @@ import {
   Shield, Heart, Share2, Calendar as CalendarIcon,
   CheckCircle, ArrowLeft 
 } from 'lucide-react';
-import { properties } from '@/data/properties';
-import { expandedProperties } from '@/data/expandedProperties';
-import type { Property } from '@/data/properties';
+import { allProperties } from '@/data/expandedProperties';
+import type { ExpandedProperty } from '@/data/expandedProperties';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [selectedDates, setSelectedDates] = useState<Date | undefined>();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  const allProperties = [...properties, ...expandedProperties];
   const property = allProperties.find(p => p.id === id);
 
   useEffect(() => {
@@ -32,20 +32,22 @@ const PropertyDetailPage = () => {
 
   if (!property) return null;
 
+  // Type assertion to ExpandedProperty
+  const expandedProperty = property as ExpandedProperty;
+
   const handleBooking = () => {
-    const user = localStorage.getItem('currentUser');
-    if (!user) {
+    if (!isAuthenticated) {
       navigate('/login');
       return;
     }
     
-    // Add booking logic here
-    console.log('Booking property:', property.id);
-    navigate('/dashboard');
+    // Navigate to checkout page
+    console.log('Booking property:', expandedProperty.id);
+    navigate(`/checkout/${expandedProperty.id}`);
   };
 
   const formatPrice = (price: number, duration: string) => {
-    return `$${price.toLocaleString()}/${duration === 'day' ? 'night' : duration}`;
+    return `₹${price.toLocaleString()}/${duration === 'day' ? 'night' : duration}`;
   };
 
   return (
@@ -67,13 +69,13 @@ const PropertyDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           <div className="lg:col-span-2">
             <div className="relative aspect-video rounded-xl overflow-hidden">
-              <img 
-                src={property.gallery[currentImageIndex]} 
-                alt={property.title}
-                className="w-full h-full object-cover"
-              />
+                              <img 
+                  src={expandedProperty.gallery[currentImageIndex]} 
+                  alt={expandedProperty.title}
+                  className="w-full h-full object-cover"
+                />
               <div className="absolute bottom-4 left-4 flex space-x-2">
-                {property.gallery.map((_, index) => (
+                {expandedProperty.gallery.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
@@ -87,11 +89,11 @@ const PropertyDetailPage = () => {
           </div>
           
           <div className="space-y-4">
-            {property.gallery.slice(1, 3).map((image, index) => (
+            {expandedProperty.gallery.slice(1, 3).map((image, index) => (
               <div key={index} className="aspect-square rounded-xl overflow-hidden">
                 <img 
                   src={image} 
-                  alt={`${property.title} ${index + 2}`}
+                  alt={`${expandedProperty.title} ${index + 2}`}
                   className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
                   onClick={() => setCurrentImageIndex(index + 1)}
                 />
@@ -114,19 +116,19 @@ const PropertyDetailPage = () => {
                     {property.location}
                   </div>
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                      <span className="font-medium">{property.rating}</span>
-                      <span className="text-muted-foreground ml-1">
-                        ({property.reviews} reviews)
-                      </span>
-                    </div>
-                    {property.verified && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Verified
-                      </Badge>
-                    )}
+                                      <div className="flex items-center">
+                    <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                    <span className="font-medium">{expandedProperty.rating}</span>
+                    <span className="text-muted-foreground ml-1">
+                      ({expandedProperty.reviews} reviews)
+                    </span>
+                  </div>
+                  {expandedProperty.verified && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
                   </div>
                 </div>
                 
@@ -143,15 +145,15 @@ const PropertyDetailPage = () => {
               <div className="flex items-center space-x-6 text-sm text-muted-foreground">
                 <div className="flex items-center">
                   <Users className="w-4 h-4 mr-1" />
-                  {property.guests} guests
+                  {expandedProperty.guests} guests
                 </div>
                 <div className="flex items-center">
                   <Bed className="w-4 h-4 mr-1" />
-                  {property.bedrooms} bedroom{property.bedrooms > 1 ? 's' : ''}
+                  {expandedProperty.bedrooms} bedroom{expandedProperty.bedrooms > 1 ? 's' : ''}
                 </div>
                 <div className="flex items-center">
                   <Bath className="w-4 h-4 mr-1" />
-                  {property.bathrooms} bathroom{property.bathrooms > 1 ? 's' : ''}
+                  {expandedProperty.bathrooms} bathroom{expandedProperty.bathrooms > 1 ? 's' : ''}
                 </div>
               </div>
             </div>
@@ -161,7 +163,7 @@ const PropertyDetailPage = () => {
             <div>
               <h3 className="text-lg font-semibold mb-3">About this place</h3>
               <p className="text-muted-foreground leading-relaxed">
-                {property.description}
+                {expandedProperty.description}
               </p>
             </div>
 
@@ -170,7 +172,7 @@ const PropertyDetailPage = () => {
             <div>
               <h3 className="text-lg font-semibold mb-3">Amenities</h3>
               <div className="grid grid-cols-2 gap-3">
-                {property.amenities.map((amenity, index) => (
+                {expandedProperty.amenities.map((amenity, index) => (
                   <div key={index} className="flex items-center">
                     <Wifi className="w-4 h-4 mr-2 text-primary" />
                     <span className="text-sm">{amenity}</span>
@@ -184,7 +186,7 @@ const PropertyDetailPage = () => {
             <div>
               <h3 className="text-lg font-semibold mb-3">Features</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {property.features.map((feature, index) => (
+                {expandedProperty.features.map((feature, index) => (
                   <div key={index} className="flex items-center">
                     <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
                     <span className="text-sm">{feature}</span>
@@ -200,19 +202,19 @@ const PropertyDetailPage = () => {
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
                   <span className="text-white font-semibold">
-                    {property.landlord.name.charAt(0)}
+                    {expandedProperty.landlord.name.charAt(0)}
                   </span>
                 </div>
                 <div>
                   <div className="flex items-center">
-                    <span className="font-medium">{property.landlord.name}</span>
-                    {property.landlord.verified && (
+                    <span className="font-medium">{expandedProperty.landlord.name}</span>
+                    {expandedProperty.landlord.verified && (
                       <CheckCircle className="w-4 h-4 ml-2 text-green-600" />
                     )}
                   </div>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Star className="w-3 h-3 mr-1 text-yellow-400" />
-                    {property.landlord.rating.toFixed(1)} host rating
+                    {expandedProperty.landlord.rating.toFixed(1)} host rating
                   </div>
                 </div>
               </div>
@@ -225,9 +227,9 @@ const PropertyDetailPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span className="text-2xl font-bold">
-                    {formatPrice(property.price, property.duration)}
+                    {formatPrice(expandedProperty.price, expandedProperty.duration)}
                   </span>
-                  <Badge variant="outline">{property.type}</Badge>
+                  <Badge variant="outline">{expandedProperty.type}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -247,16 +249,16 @@ const PropertyDetailPage = () => {
                 <div className="space-y-2 pt-4 border-t">
                   <div className="flex justify-between text-sm">
                     <span>Base price</span>
-                    <span>{formatPrice(property.price, property.duration)}</span>
+                    <span>{formatPrice(expandedProperty.price, expandedProperty.duration)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Service fee</span>
-                    <span>$25</span>
+                    <span>₹25</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${(property.price + 25).toLocaleString()}</span>
+                    <span>₹{(expandedProperty.price + 25).toLocaleString()}</span>
                   </div>
                 </div>
 

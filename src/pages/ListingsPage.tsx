@@ -2,26 +2,24 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import PropertyCard from '@/components/PropertyCard';
-import { properties } from '@/data/properties';
-import { expandedProperties } from '@/data/expandedProperties';
+import { allProperties, getPropertiesByCity, getPropertiesByType, getPropertiesByPriceRange, searchProperties } from '@/data/expandedProperties';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, MapPin, X } from 'lucide-react';
+import { Search, Filter, MapPin, X, Building, Users, Star } from 'lucide-react';
 
 const ListingsPage = () => {
   const [searchParams] = useSearchParams();
-  const allProperties = [...properties, ...expandedProperties];
   const [filteredProperties, setFilteredProperties] = useState(allProperties);
   const [showFilters, setShowFilters] = useState(false);
   
   const [filters, setFilters] = useState({
     location: searchParams.get('location') || '',
-    priceRange: [0, 5000],
-    duration: searchParams.get('duration') || '',
+    priceRange: [0, 100000],
+    duration: searchParams.get('duration') || 'all',
     guests: searchParams.get('guests') || 'any',
     propertyType: 'all',
     amenities: [] as string[],
@@ -34,7 +32,15 @@ const ListingsPage = () => {
     'Pool', 'Gym', 'Balcony', 'Garden', 'Doorman', 'Elevator'
   ];
 
-  const propertyTypes = ['Studio', 'Apartment', 'Loft', 'Penthouse', 'Garden Apartment'];
+  const propertyTypes = ['Studio', 'Apartment', 'Loft', 'Penthouse', 'House', 'Townhouse', 'Villa', 'Commercial', 'Land'];
+
+  const durationOptions = [
+    { value: 'day', label: 'Daily' },
+    { value: 'week', label: 'Weekly' },
+    { value: 'month', label: 'Monthly' },
+    { value: 'year', label: 'Yearly' },
+    { value: 'sale', label: 'For Sale' }
+  ];
 
   useEffect(() => {
     let filtered = allProperties;
@@ -42,7 +48,8 @@ const ListingsPage = () => {
     // Location filter
     if (filters.location) {
       filtered = filtered.filter(property =>
-        property.location.toLowerCase().includes(filters.location.toLowerCase())
+        property.location.toLowerCase().includes(filters.location.toLowerCase()) ||
+        property.city.toLowerCase().includes(filters.location.toLowerCase())
       );
     }
 
@@ -52,11 +59,8 @@ const ListingsPage = () => {
     );
 
     // Duration filter
-    if (filters.duration) {
-      filtered = filtered.filter(property => {
-        // Simple duration matching logic
-        return property.duration === 'month'; // All properties are monthly for now
-      });
+    if (filters.duration && filters.duration !== 'all') {
+      filtered = filtered.filter(property => property.duration === filters.duration);
     }
 
     // Guests filter
@@ -102,8 +106,8 @@ const ListingsPage = () => {
   const clearFilters = () => {
     setFilters({
       location: '',
-      priceRange: [0, 5000],
-      duration: '',
+      priceRange: [0, 100000],
+      duration: 'all',
       guests: 'any',
       propertyType: 'all',
       amenities: [],
@@ -112,241 +116,195 @@ const ListingsPage = () => {
     });
   };
 
-  const activeFiltersCount = 
-    (filters.location ? 1 : 0) +
-    (filters.duration ? 1 : 0) +
-    (filters.guests && filters.guests !== 'any' ? 1 : 0) +
-    (filters.propertyType && filters.propertyType !== 'all' ? 1 : 0) +
-    filters.amenities.length +
-    (filters.verified ? 1 : 0);
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-serif font-bold text-foreground mb-2">
-            Find Your Perfect Rental
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-serif font-bold text-foreground mb-4">
+            Find Your Perfect Home
           </h1>
-          <p className="text-muted-foreground">
-            {filteredProperties.length} properties available
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover {allProperties.length}+ verified properties across India. From cozy studios to luxury villas, 
+            find the perfect place that fits your lifestyle and budget.
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:w-80 space-y-6">
-            {/* Mobile Filter Toggle */}
-            <div className="lg:hidden">
-              <Button
-                onClick={() => setShowFilters(!showFilters)}
-                variant="outline"
+        {/* Search and Filters */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div>
+              <Input
+                placeholder="Search by location or city..."
+                value={filters.location}
+                onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
                 className="w-full"
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-              </Button>
+              />
             </div>
+            
+            <Select value={filters.duration} onValueChange={(value) => setFilters(prev => ({ ...prev, duration: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Durations</SelectItem>
+                {durationOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            {/* Filter Content */}
-            <div className={`space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-              <div className="bg-card rounded-lg p-6 shadow-card">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-foreground">Filters</h3>
-                  {activeFiltersCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      Clear all
-                    </Button>
-                  )}
-                </div>
+            <Select value={filters.propertyType} onValueChange={(value) => setFilters(prev => ({ ...prev, propertyType: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Property Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-                {/* Location Search */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Location</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Enter city or area"
-                      value={filters.location}
-                      onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
-                      className="pl-9"
+            <Button 
+              onClick={() => setShowFilters(!showFilters)}
+              variant="outline"
+              className="flex items-center justify-center"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              {showFilters ? 'Hide' : 'Show'} Filters
+            </Button>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="border-t pt-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Price Range (₹)</label>
+                  <div className="space-y-2">
+                    <Slider
+                      value={filters.priceRange}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: value }))}
+                      max={100000}
+                      step={1000}
+                      className="w-full"
                     />
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>{formatCurrency(filters.priceRange[0])}</span>
+                      <span>{formatCurrency(filters.priceRange[1])}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Price Range */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">
-                    Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}
-                  </label>
-                  <Slider
-                    value={filters.priceRange}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: value }))}
-                    max={5000}
-                    min={0}
-                    step={100}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Property Type */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Property Type</label>
-                  <Select 
-                    value={filters.propertyType} 
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, propertyType: value }))}
-                  >
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Guests</label>
+                  <Select value={filters.guests} onValueChange={(value) => setFilters(prev => ({ ...prev, guests: value }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      {propertyTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Guests */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Guests</label>
-                  <Select 
-                    value={filters.guests} 
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, guests: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="any">Any</SelectItem>
-                      <SelectItem value="1">1 Guest</SelectItem>
-                      <SelectItem value="2">2 Guests</SelectItem>
-                      <SelectItem value="3">3 Guests</SelectItem>
-                      <SelectItem value="4">4 Guests</SelectItem>
-                      <SelectItem value="5">5+ Guests</SelectItem>
+                      <SelectItem value="1">1+ Guest</SelectItem>
+                      <SelectItem value="2">2+ Guests</SelectItem>
+                      <SelectItem value="4">4+ Guests</SelectItem>
+                      <SelectItem value="6">6+ Guests</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Amenities */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Amenities</label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {amenityOptions.map(amenity => (
-                      <div key={amenity} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={amenity}
-                          checked={filters.amenities.includes(amenity)}
-                          onCheckedChange={(checked) => handleAmenityChange(amenity, !!checked)}
-                        />
-                        <label htmlFor={amenity} className="text-sm text-foreground">
-                          {amenity}
-                        </label>
-                      </div>
-                    ))}
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="verified" 
+                      checked={filters.verified}
+                      onCheckedChange={(checked) => setFilters(prev => ({ ...prev, verified: checked as boolean }))}
+                    />
+                    <label htmlFor="verified" className="text-sm">Verified Only</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="available" 
+                      checked={filters.available}
+                      onCheckedChange={(checked) => setFilters(prev => ({ ...prev, available: checked as boolean }))}
+                    />
+                    <label htmlFor="available" className="text-sm">Available Only</label>
                   </div>
                 </div>
-
-                {/* Verified Only */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="verified"
-                    checked={filters.verified}
-                    onCheckedChange={(checked) => setFilters(prev => ({ ...prev, verified: !!checked }))}
-                  />
-                  <label htmlFor="verified" className="text-sm text-foreground">
-                    Verified properties only
-                  </label>
-                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Active Filters */}
-            {activeFiltersCount > 0 && (
-              <div className="mb-6">
-                <div className="flex flex-wrap gap-2">
-                  {filters.location && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      {filters.location}
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setFilters(prev => ({ ...prev, location: '' }))}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Amenities</label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {amenityOptions.map((amenity) => (
+                    <div key={amenity} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={amenity} 
+                        checked={filters.amenities.includes(amenity)}
+                        onCheckedChange={(checked) => handleAmenityChange(amenity, checked as boolean)}
                       />
-                    </Badge>
-                  )}
-                  {filters.propertyType && filters.propertyType !== 'all' && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      {filters.propertyType}
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setFilters(prev => ({ ...prev, propertyType: 'all' }))}
-                      />
-                    </Badge>
-                  )}
-                  {filters.guests && filters.guests !== 'any' && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      {filters.guests === '1' ? '1 Guest' : 
-                       filters.guests === '5' ? '5+ Guests' : 
-                       `${filters.guests} Guests`}
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setFilters(prev => ({ ...prev, guests: 'any' }))}
-                      />
-                    </Badge>
-                  )}
-                  {filters.amenities.map(amenity => (
-                    <Badge key={amenity} variant="secondary" className="px-3 py-1">
-                      {amenity}
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => handleAmenityChange(amenity, false)}
-                      />
-                    </Badge>
+                      <label htmlFor={amenity} className="text-sm">{amenity}</label>
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Properties Grid */}
-            {filteredProperties.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProperties.map((property) => (
-                  <PropertyCard 
-                    key={property.id} 
-                    property={property}
-                    onToggleFavorite={(id) => {
-                      // Handle favorite toggle
-                      console.log('Toggle favorite:', id);
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  No properties found
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Try adjusting your filters to see more results
-                </p>
-                <Button onClick={clearFilters} variant="outline">
+              <div className="flex justify-between items-center">
+                <Button variant="outline" onClick={clearFilters}>
+                  <X className="w-4 h-4 mr-2" />
                   Clear Filters
                 </Button>
+                <div className="text-sm text-muted-foreground">
+                  {filteredProperties.length} properties found
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
+
+        {/* Properties Grid */}
+        <div>
+          {filteredProperties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredProperties.map((property) => (
+                <PropertyCard 
+                  key={property.id} 
+                  property={property}
+                  onToggleFavorite={(id) => {
+                    // Handle favorite toggle
+                    console.log('Toggle favorite:', id);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                No properties found
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your filters to see more results
+              </p>
+              <Button onClick={clearFilters} variant="outline">
+                Clear Filters
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

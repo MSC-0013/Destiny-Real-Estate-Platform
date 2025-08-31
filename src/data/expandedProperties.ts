@@ -35,7 +35,7 @@ export interface ExpandedProperty {
   gallery: string[];
   nearbyPlaces: {
     name: string;
-    type: 'school' | 'hospital' | 'restaurant' | 'transport' | 'shopping' | 'park' | 'bank';
+    type: 'school' | 'hospital' | 'restaurant' | 'transport' | 'shopping' | 'park' | 'bank' | 'business';
     distance: string;
     rating?: number;
   }[];
@@ -536,7 +536,7 @@ export const generateMoreProperties = (): ExpandedProperty[] => {
     const price = Math.round(basePrice / 1000) * 1000;
 
     additionalProperties.push({
-      id: `${city.name.toLowerCase().substring(0, 3)}-${String(i + 2).padStart(3, '0')}`,
+      id: `${city.name.toLowerCase().substring(0, 3)}-gen-${String(i + 1).padStart(3, '0')}`,
       title: `${type} in ${location} Area`,
       location: location,
       city: city.name,
