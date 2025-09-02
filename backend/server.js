@@ -1,4 +1,9 @@
+// Load env from backend/.env first, then try project root .env
+const path = require('path');
 require('dotenv').config();
+if (!process.env.PORT && !process.env.MONGODB_URI && !process.env.MONGO_URI) {
+  require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+}
 const express = require('express');
 const cors = require('cors');
 const { connectToDatabase } = require('./config/db');
@@ -58,7 +63,7 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-connectToDatabase(process.env.MONGODB_URI)
+connectToDatabase(process.env.MONGODB_URI || process.env.MONGO_URI)
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Destiny backend running on http://localhost:${PORT}`);
