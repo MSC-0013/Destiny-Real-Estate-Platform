@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { getCurrentUser, setCurrentUser, getAllUsers, addUser } from '@/utils/localStorage';
+import { api, setAuthToken } from '@/lib/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AuthContextType {
@@ -64,19 +66,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: true, message: 'Admin login successful!' };
       }
 
-      // Check for regular users
-      const users = getAllUsers();
-      const foundUser = users.find(u => u.email === email);
-      
-      if (!foundUser) {
-        return { success: false, message: 'User not found. Please register first.' };
+      // Try backend first
+      const resp = await api.post('/auth/login', { email, password });
+      if (resp.status === 200) {
+        const data = resp.data;
+        const backendUser = { ...data.user, token: data.token } as any;
+        setAuthToken(data.token);
+        setUser(backendUser);
+        setCurrentUser(backendUser);
+        return { success: true, message: 'Login successful!' };
       }
 
-      // In a real app, you would verify the password hash
-      // For demo purposes, we'll accept any password
+      // Fallback to local users
+      const users = getAllUsers();
+      const foundUser = users.find(u => u.email === email);
+      if (!foundUser) return { success: false, message: 'User not found. Please register first.' };
       setUser(foundUser);
       setCurrentUser(foundUser);
-      return { success: true, message: 'Login successful!' };
+      return { success: true, message: 'Login successful! (local)' };
     } catch (error) {
       return { success: false, message: 'Login failed. Please try again.' };
     }
@@ -84,13 +91,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (userData: RegisterData): Promise<{ success: boolean; message: string }> => {
     try {
+      // Try backend
+      const resp = await api.post('/auth/signup', userData);
+      if (resp.status === 200) {
+        const data = resp.data;
+        const backendUser = { ...data.user, token: data.token } as any;
+        setAuthToken(data.token);
+        setUser(backendUser);
+        setCurrentUser(backendUser);
+        return { success: true, message: 'Registration successful!' };
+      }
+
+      // Fallback to local storage
       const users = getAllUsers();
-      
-      // Check if user already exists
       if (users.find(u => u.email === userData.email)) {
         return { success: false, message: 'User with this email already exists.' };
       }
-
       const newUser: User = {
         id: uuidv4(),
         name: userData.name,
@@ -102,12 +118,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         rating: 0,
         reviews: 0
       };
-
       addUser(newUser);
       setUser(newUser);
       setCurrentUser(newUser);
-      
-      return { success: true, message: 'Registration successful!' };
+      return { success: true, message: 'Registration successful! (local)' };
     } catch (error) {
       return { success: false, message: 'Registration failed. Please try again.' };
     }
@@ -116,6 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     setCurrentUser(null);
+    setAuthToken(undefined);
   };
 
   const updateProfile = (updates: Partial<User>) => {

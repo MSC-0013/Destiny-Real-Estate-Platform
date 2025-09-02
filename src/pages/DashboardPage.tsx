@@ -48,7 +48,7 @@ const DashboardPage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$3,450</div>
+            <div className="text-2xl font-bold">₹3,450</div>
             <p className="text-xs text-muted-foreground">This year</p>
           </CardContent>
         </Card>
@@ -92,7 +92,7 @@ const DashboardPage = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">$1,200/month</p>
+                    <p className="font-medium">₹1,200/month</p>
                     <p className="text-sm text-muted-foreground">Ends: Mar 2024</p>
                   </div>
                 </div>
@@ -109,7 +109,7 @@ const DashboardPage = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">$3,500/month</p>
+                    <p className="font-medium">₹3,500/month</p>
                     <p className="text-sm text-muted-foreground">Starts: Apr 2024</p>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ const DashboardPage = () => {
                     <p className="text-sm text-muted-foreground">March 2024</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">$1,200</p>
+                    <p className="font-medium">₹1,200</p>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 mt-1">
                       Paid
                     </Badge>
@@ -187,7 +187,7 @@ const DashboardPage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$12,500</div>
+            <div className="text-2xl font-bold">₹12,500</div>
             <p className="text-xs text-muted-foreground">+12% from last month</p>
           </CardContent>
         </Card>
@@ -247,7 +247,7 @@ const DashboardPage = () => {
                     </Badge>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">$1,200/month</p>
+                    <p className="font-medium">₹1,200/month</p>
                     <p className="text-sm text-muted-foreground">124 views</p>
                   </div>
                 </div>

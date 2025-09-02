@@ -120,7 +120,7 @@ const AdminPage = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">₹{stats.monthlyRevenue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">+8% from last month</p>
             </CardContent>
           </Card>
@@ -240,7 +240,7 @@ const AdminPage = () => {
                           >
                             {property.status}
                           </Badge>
-                          <span className="text-sm font-medium">${property.price}/month</span>
+                          <span className="text-sm font-medium">₹{property.price}/month</span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">

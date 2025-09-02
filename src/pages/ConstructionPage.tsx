@@ -404,7 +404,7 @@ const ConstructionPage = () => {
                       <Button 
                         variant="outline" 
                         className="w-full"
-                        onClick={() => navigate('/contact?service=construction&model=' + model.id)}
+                        onClick={() => navigate('/construction/chatbot?model=' + model.id)}
                       >
                         Start Construction
                       </Button>

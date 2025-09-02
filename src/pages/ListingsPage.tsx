@@ -45,11 +45,14 @@ const ListingsPage = () => {
   useEffect(() => {
     let filtered = allProperties;
 
-    // Location filter
+    // Location filter (supports slug like bangalore-indiranagar)
     if (filters.location) {
+      const slug = filters.location.toLowerCase();
+      const slugToCity = slug.split('-')[0];
+      const slugToLoc = slug.replace(/-/g, ' ');
       filtered = filtered.filter(property =>
-        property.location.toLowerCase().includes(filters.location.toLowerCase()) ||
-        property.city.toLowerCase().includes(filters.location.toLowerCase())
+        property.location.toLowerCase().includes(slugToLoc) ||
+        property.city.toLowerCase().includes(slugToCity)
       );
     }
 

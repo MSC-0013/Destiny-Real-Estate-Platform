@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { api } from '@/lib/api';
 import { Property } from '@/data/properties';
 import { useAuth } from './AuthContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -103,6 +104,7 @@ export const OrdersProvider: React.FC<OrdersProviderProps> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [constructionProjects, setConstructionProjects] = useState<ConstructionProject[]>([]);
   const { user } = useAuth();
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8080/api';
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -180,6 +182,23 @@ export const OrdersProvider: React.FC<OrdersProviderProps> = ({ children }) => {
       updatedAt: new Date().toISOString()
     };
 
+    try {
+      const resp = await api.post('/orders', {
+        propertyId: property.id,
+        type: (property as any).type || 'rental',
+        amount: totalAmount,
+        currency: 'INR',
+        metadata: { startDate: bookingDetails.startDate, endDate: bookingDetails.endDate, guests: bookingDetails.guests }
+      });
+      if (resp.status === 201) {
+        const data = resp.data;
+        const created = { ...newOrder, id: data.order.id };
+        setOrders(prev => [...prev, created]);
+        return created;
+      }
+    } catch (e) {
+      // ignore and fallback to local
+    }
     setOrders(prev => [...prev, newOrder]);
     return newOrder;
   };
@@ -195,7 +214,7 @@ export const OrdersProvider: React.FC<OrdersProviderProps> = ({ children }) => {
   const updatePaymentStatus = (orderId: string, status: Order['paymentStatus']) => {
     setOrders(prev => prev.map(order => 
       order.id === orderId 
-        ? { ...order, paymentStatus, updatedAt: new Date().toISOString() }
+        ? { ...order, paymentStatus: status, updatedAt: new Date().toISOString() }
         : order
     ));
   };

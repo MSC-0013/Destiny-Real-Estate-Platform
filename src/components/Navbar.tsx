@@ -189,7 +189,7 @@ const Navbar = () => {
             </Button>
           </div>
         </div>
-
+              
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md">

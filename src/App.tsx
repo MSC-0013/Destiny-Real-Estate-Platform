@@ -28,6 +28,7 @@ import NotFound from "./pages/NotFound";
 import MarketplacePage from "./pages/MarketplacePage";
 import ConstructionPage from "./pages/ConstructionPage";
 import NeighborhoodsPage from "./pages/NeighborhoodsPage";
+import NeighborhoodDetailPage from "./pages/NeighborhoodDetailPage";
 import ChatPage from "./pages/ChatPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -36,6 +37,7 @@ import ContactPage from "./pages/ContactPage";
 import BlogPage from "./pages/BlogPage";
 import CareersPage from "./pages/CareersPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import ConstructionChatbotPage from "./pages/ConstructionChatbotPage";
 
 const queryClient = new QueryClient();
 
@@ -60,7 +62,9 @@ const App = () => {
               <Route path="/listings" element={<ListingsPage />} />
               <Route path="/marketplace" element={<MarketplacePage />} />
               <Route path="/construction" element={<ConstructionPage />} />
+              <Route path="/construction/chatbot" element={<ConstructionChatbotPage />} />
               <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
+              <Route path="/neighborhood/:id" element={<NeighborhoodDetailPage />} />
               
               {/* Property Routes */}
               <Route path="/property/:id" element={<PropertyDetailPage />} />

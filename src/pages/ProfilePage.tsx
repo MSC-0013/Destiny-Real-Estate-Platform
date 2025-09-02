@@ -62,7 +62,7 @@ const ProfilePage = () => {
       property: 'Modern Downtown Studio',
       location: 'Downtown, New York',
       duration: 'Mar 2024 - Jun 2024',
-      amount: '$3,600',
+      amount: '₹3,600',
       status: 'Completed'
     },
     {
@@ -70,7 +70,7 @@ const ProfilePage = () => {
       property: 'Luxury Penthouse Suite',
       location: 'Manhattan, New York',
       duration: 'Jan 2024 - Feb 2024',
-      amount: '$7,000',
+      amount: '₹7,000',
       status: 'Completed'
     }
   ];
@@ -241,7 +241,7 @@ const ProfilePage = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Spent</p>
-                    <p className="text-2xl font-bold">$18,450</p>
+                    <p className="text-2xl font-bold">₹18,450</p>
                   </div>
                 </CardContent>
               </Card>

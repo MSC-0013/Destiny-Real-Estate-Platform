@@ -147,11 +147,11 @@ const Hero = () => {
                         <SelectValue placeholder="Select budget" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0-100">$0 - $100</SelectItem>
-                        <SelectItem value="100-500">$100 - $500</SelectItem>
-                        <SelectItem value="500-1000">$500 - $1,000</SelectItem>
-                        <SelectItem value="1000-5000">$1,000 - $5,000</SelectItem>
-                        <SelectItem value="5000+">$5,000+</SelectItem>
+                        <SelectItem value="0-100">₹0 - ₹100</SelectItem>
+                        <SelectItem value="100-500">₹100 - ₹500</SelectItem>
+                        <SelectItem value="500-1000">₹500 - ₹1,000</SelectItem>
+                        <SelectItem value="1000-5000">₹1,000 - ₹5,000</SelectItem>
+                        <SelectItem value="5000+">₹5,000+</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -218,10 +218,10 @@ const Hero = () => {
                         <SelectValue placeholder="Price range" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0-100k">$0 - $100k</SelectItem>
-                        <SelectItem value="100k-500k">$100k - $500k</SelectItem>
-                        <SelectItem value="500k-1m">$500k - $1M</SelectItem>
-                        <SelectItem value="1m+">$1M+</SelectItem>
+                        <SelectItem value="0-100k">₹0 - ₹100k</SelectItem>
+                        <SelectItem value="100k-500k">₹100k - ₹500k</SelectItem>
+                        <SelectItem value="500k-1m">₹500k - ₹1M</SelectItem>
+                        <SelectItem value="1m+">₹1M+</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -270,9 +270,9 @@ const Hero = () => {
                         <SelectValue placeholder="Project size" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="small">Small (Under $50k)</SelectItem>
-                        <SelectItem value="medium">Medium ($50k - $200k)</SelectItem>
-                        <SelectItem value="large">Large ($200k+)</SelectItem>
+                        <SelectItem value="small">Small (Under ₹50k)</SelectItem>
+                        <SelectItem value="medium">Medium (₹50k - ₹200k)</SelectItem>
+                        <SelectItem value="large">Large (₹200k+)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
