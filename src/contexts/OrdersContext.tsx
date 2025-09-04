@@ -63,15 +63,18 @@ export interface ConstructionProject {
 interface OrdersContextType {
   orders: Order[];
   constructionProjects: ConstructionProject[];
+  loading: boolean;
+  error: string | null;
   createOrder: (property: Property, bookingDetails: {
     startDate: string;
     endDate: string;
     guests: number;
     specialRequests?: string;
   }) => Promise<Order>;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  updatePaymentStatus: (orderId: string, status: Order['paymentStatus']) => void;
+  updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  updatePaymentStatus: (orderId: string, status: Order['paymentStatus']) => Promise<void>;
   getUserOrders: (userId: string) => Order[];
+  fetchUserOrders: (userId: string) => Promise<void>;
   createConstructionProject: (projectData: Omit<ConstructionProject, 'id' | 'createdAt' | 'updatedAt' | 'milestones' | 'materials' | 'workers'>) => ConstructionProject;
   updateProjectProgress: (projectId: string, progress: number) => void;
   addProjectMilestone: (projectId: string, milestone: Omit<ConstructionProject['milestones'][0], 'id'>) => void;
@@ -84,6 +87,7 @@ interface OrdersContextType {
     completed: number;
     pending: number;
   };
+  refreshOrders: () => Promise<void>;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -103,8 +107,9 @@ interface OrdersProviderProps {
 export const OrdersProvider: React.FC<OrdersProviderProps> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [constructionProjects, setConstructionProjects] = useState<ConstructionProject[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8080/api';
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -203,20 +208,89 @@ export const OrdersProvider: React.FC<OrdersProviderProps> = ({ children }) => {
     return newOrder;
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, status, updatedAt: new Date().toISOString() }
-        : order
-    ));
+  const fetchUserOrders = async (userId: string) => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get('/orders');
+      if (response.data && response.data.orders) {
+        // Convert backend orders to frontend format
+        const backendOrders = response.data.orders.map((backendOrder: any) => ({
+          id: backendOrder.id,
+          property: {
+            id: backendOrder.propertyId,
+            title: 'Property',
+            location: 'Location',
+            price: backendOrder.amount,
+            duration: 'month',
+            guests: 2,
+            bedrooms: 1,
+            bathrooms: 1,
+            image: '/placeholder.jpg',
+            rating: 4.5,
+            reviews: 0,
+            type: 'Apartment',
+            amenities: [],
+            available: true,
+            verified: true
+          },
+          userId: backendOrder.userId,
+          startDate: backendOrder.metadata?.startDate || new Date().toISOString(),
+          endDate: backendOrder.metadata?.endDate || new Date().toISOString(),
+          totalAmount: backendOrder.amount,
+          status: backendOrder.status,
+          paymentStatus: backendOrder.paymentStatus,
+          guests: backendOrder.metadata?.guests || 2,
+          specialRequests: backendOrder.metadata?.specialRequests,
+          createdAt: backendOrder.createdAt,
+          updatedAt: backendOrder.updatedAt
+        }));
+        
+        setOrders(backendOrders);
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Failed to fetch orders');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updatePaymentStatus = (orderId: string, status: Order['paymentStatus']) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, paymentStatus: status, updatedAt: new Date().toISOString() }
-        : order
-    ));
+  const refreshOrders = async () => {
+    if (user) {
+      await fetchUserOrders(user.id);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      await api.patch(`/orders/${orderId}`, { status });
+      setOrders(prev => prev.map(order => 
+        order.id === orderId 
+          ? { ...order, status, updatedAt: new Date().toISOString() }
+          : order
+      ));
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      setError('Failed to update order status');
+    }
+  };
+
+  const updatePaymentStatus = async (orderId: string, status: Order['paymentStatus']) => {
+    try {
+      await api.patch(`/orders/${orderId}`, { paymentStatus: status });
+      setOrders(prev => prev.map(order => 
+        order.id === orderId 
+          ? { ...order, paymentStatus: status, updatedAt: new Date().toISOString() }
+          : order
+      ));
+    } catch (err) {
+      console.error('Error updating payment status:', err);
+      setError('Failed to update payment status');
+    }
   };
 
   const getUserOrders = (userId: string) => {
@@ -294,17 +368,21 @@ export const OrdersProvider: React.FC<OrdersProviderProps> = ({ children }) => {
   const value: OrdersContextType = {
     orders,
     constructionProjects,
+    loading,
+    error,
     createOrder,
     updateOrderStatus,
     updatePaymentStatus,
     getUserOrders,
+    fetchUserOrders,
     createConstructionProject,
     updateProjectProgress,
     addProjectMilestone,
     completeProjectMilestone,
     getUserProjects,
     totalSpent,
-    orderStats
+    orderStats,
+    refreshOrders
   };
 
   return (

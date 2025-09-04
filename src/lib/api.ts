@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:5000/api';
+// Prefer env; fall back to relative \/api so Vite proxy can forward to backend
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
 export const api = axios.create({
   baseURL: API_BASE,

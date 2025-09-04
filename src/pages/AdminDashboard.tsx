@@ -1,563 +1,446 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Building, 
   Users, 
-  Home, 
-  MapPin, 
-  Star, 
+  Building, 
+  Hammer, 
+  CheckCircle, 
   Clock, 
-  DollarSign,
-  CheckCircle,
-  Search,
-  Phone,
-  Mail,
-  FileText,
-  Download,
+  AlertCircle, 
+  RefreshCw,
   Eye,
-  Edit,
-  Trash2,
-  UserPlus,
+  Check,
+  X,
   BarChart3,
   TrendingUp,
-  Shield,
-  Hammer
+  Calendar,
+  MapPin
 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Worker {
-  id: string;
-  name: string;
-  role: 'worker' | 'designer' | 'supervisor' | 'manager';
-  experience: number;
-  rating: number;
-  projects: number;
-  available: boolean;
-  specializations: string[];
-  hourlyRate: number;
-  avatar: string;
-  status: 'active' | 'inactive' | 'suspended';
-  joinDate: string;
-  contact: string;
-  email: string;
-}
-
-interface Property {
-  id: string;
-  title: string;
-  location: string;
-  price: number;
-  status: 'available' | 'rented' | 'sold' | 'under-construction';
-  landlord: string;
-  verified: boolean;
-  createdAt: string;
-}
-
-interface Analytics {
-  totalUsers: number;
-  totalProperties: number;
-  totalWorkers: number;
-  totalRevenue: number;
-  monthlyGrowth: number;
-  activeProjects: number;
-  pendingVerifications: number;
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { useConstruction } from '@/contexts/ConstructionContext';
+import { useOrders } from '@/contexts/OrdersContext';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [analytics, setAnalytics] = useState<Analytics>({
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { 
+    projects, 
+    loading: constructionLoading, 
+    error: constructionError, 
+    getAllProjects, 
+    approveProject, 
+    refreshProjects 
+  } = useConstruction();
+  const { orders, loading: ordersLoading, refreshOrders } = useOrders();
+  const { toast } = useToast();
+
+  const [stats, setStats] = useState({
     totalUsers: 0,
     totalProperties: 0,
-    totalWorkers: 0,
-    totalRevenue: 0,
-    monthlyGrowth: 0,
+    totalOrders: 0,
+    totalProjects: 0,
+    pendingApprovals: 0,
     activeProjects: 0,
-    pendingVerifications: 0
+    completedProjects: 0,
+    totalRevenue: 0
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [showAddWorker, setShowAddWorker] = useState(false);
 
-  // Mock data - in real app, this would come from API
   useEffect(() => {
-    const mockWorkers: Worker[] = [
-      {
-        id: 'w1',
-        name: 'Rajesh Kumar',
-        role: 'manager',
-        experience: 15,
-        rating: 4.8,
-        projects: 45,
-        available: true,
-        specializations: ['Project Management', 'Team Leadership', 'Quality Control'],
-        hourlyRate: 800,
-        avatar: '/api/placeholder/100/100',
-        status: 'active',
-        joinDate: '2020-03-15',
-        contact: '+91-98765-43210',
-        email: 'rajesh.kumar@destiny.com'
-      },
-      {
-        id: 'w2',
-        name: 'Priya Sharma',
-        role: 'designer',
-        experience: 8,
-        rating: 4.7,
-        projects: 32,
-        available: true,
-        specializations: ['Interior Design', '3D Modeling', 'Space Planning'],
-        hourlyRate: 600,
-        avatar: '/api/placeholder/100/100',
-        status: 'active',
-        joinDate: '2021-06-20',
-        contact: '+91-98765-43211',
-        email: 'priya.sharma@destiny.com'
-      },
-      {
-        id: 'w3',
-        name: 'Amit Patel',
-        role: 'supervisor',
-        experience: 12,
-        rating: 4.6,
-        projects: 28,
-        available: true,
-        specializations: ['Site Supervision', 'Quality Assurance', 'Safety Management'],
-        hourlyRate: 500,
-        avatar: '/api/placeholder/100/100',
-        status: 'active',
-        joinDate: '2019-11-10',
-        contact: '+91-98765-43212',
-        email: 'amit.patel@destiny.com'
-      }
-    ];
+    if (user && user.role === 'admin') {
+      loadAllData();
+    }
+  }, [user]);
 
-    const mockProperties: Property[] = [
-      {
-        id: 'p1',
-        title: 'Luxury 3BHK Sea View Apartment',
-        location: 'Bandra West, Mumbai',
-        price: 85000,
-        status: 'available',
-        landlord: 'Rajesh Sharma',
-        verified: true,
-        createdAt: '2024-01-15'
-      },
-      {
-        id: 'p2',
-        title: 'Modern 2BHK in Powai IT Hub',
-        location: 'Powai, Mumbai',
-        price: 55000,
-        status: 'rented',
-        landlord: 'Priya Patel',
-        verified: true,
-        createdAt: '2024-01-10'
-      }
-    ];
+  const loadAllData = async () => {
+    await Promise.all([
+      getAllProjects(),
+      refreshOrders()
+    ]);
+    calculateStats();
+  };
 
-    const mockAnalytics: Analytics = {
-      totalUsers: 1250,
-      totalProperties: 156,
-      totalWorkers: 5234,
-      totalRevenue: 45000000,
-      monthlyGrowth: 12.5,
-      activeProjects: 23,
-      pendingVerifications: 8
-    };
+  const calculateStats = () => {
+    const pendingApprovals = projects.filter(p => !p.approved).length;
+    const activeProjects = projects.filter(p => p.status === 'in-progress').length;
+    const completedProjects = projects.filter(p => p.status === 'completed').length;
+    const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
-    setWorkers(mockWorkers);
-    setProperties(mockProperties);
-    setAnalytics(mockAnalytics);
-  }, []);
+    setStats({
+      totalUsers: 0, // Would need user API
+      totalProperties: 0, // Would need properties API
+      totalOrders: orders.length,
+      totalProjects: projects.length,
+      pendingApprovals,
+      activeProjects,
+      completedProjects,
+      totalRevenue
+    });
+  };
 
-  const filteredWorkers = workers.filter(worker => {
-    const matchesSearch = worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         worker.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === 'all' || worker.role === filterRole;
-    return matchesSearch && matchesRole;
-  });
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'manager': return 'bg-red-100 text-red-800';
-      case 'supervisor': return 'bg-blue-100 text-blue-800';
-      case 'designer': return 'bg-purple-100 text-purple-800';
-      case 'worker': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleApproveProject = async (projectId: string, projectTitle: string) => {
+    try {
+      await approveProject(projectId);
+      toast({
+        title: "Project Approved",
+        description: `${projectTitle} has been approved successfully.`,
+      });
+      calculateStats();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve project. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleRejectProject = async (projectId: string, projectTitle: string) => {
+    try {
+      // You would implement a reject endpoint in the backend
+      toast({
+        title: "Project Rejected",
+        description: `${projectTitle} has been rejected.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject project. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const handleAddWorker = () => {
-    setShowAddWorker(true);
-  };
-
-  const handleDeleteWorker = (workerId: string) => {
-    if (confirm('Are you sure you want to remove this worker?')) {
-      setWorkers(prev => prev.filter(w => w.id !== workerId));
-    }
-  };
-
-  const handleStatusChange = (workerId: string, newStatus: 'active' | 'inactive' | 'suspended') => {
-    setWorkers(prev => prev.map(w => 
-      w.id === workerId ? { ...w, status: newStatus } : w
-    ));
-  };
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-6" />
+          <h1 className="text-3xl font-bold text-slate-800 mb-4">Access Denied</h1>
+          <p className="text-slate-600 mb-8">
+            You need admin privileges to access this dashboard
+          </p>
+          <Button onClick={() => navigate('/dashboard')} className="bg-blue-600 hover:bg-blue-700">
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600">Manage your Destiny real estate platform</p>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full mb-6">
+            <BarChart3 className="w-8 h-8 text-white" />
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className="bg-green-100 text-green-800">
-              <Shield className="w-4 h-4 mr-1" />
-              Admin Access
-            </Badge>
-          </div>
+          <h1 className="text-5xl font-serif font-bold bg-gradient-to-r from-purple-900 via-indigo-800 to-blue-800 bg-clip-text text-transparent mb-6">
+            Admin Dashboard
+          </h1>
+          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            Manage users, properties, orders, and construction projects across the platform.
+          </p>
         </div>
 
-        {/* Analytics Cards */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">{analytics.totalUsers.toLocaleString()}</div>
-                  <div className="text-gray-600">Total Users</div>
-                </div>
-                <Users className="w-8 h-8 text-blue-600" />
-              </div>
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              <p className="text-xs text-muted-foreground">Registered users</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-green-600">{analytics.totalProperties.toLocaleString()}</div>
-                  <div className="text-gray-600">Properties</div>
-                </div>
-                <Building className="w-8 h-8 text-green-600" />
-              </div>
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <Building className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalOrders}</div>
+              <p className="text-xs text-muted-foreground">All time bookings</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">{analytics.totalWorkers.toLocaleString()}</div>
-                  <div className="text-gray-600">Workers</div>
-                </div>
-                <Hammer className="w-8 h-8 text-purple-600" />
-              </div>
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Construction Projects</CardTitle>
+              <Hammer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalProjects}</div>
+              <p className="text-xs text-muted-foreground">Total projects</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-orange-600">{formatCurrency(analytics.totalRevenue)}</div>
-                  <div className="text-gray-600">Total Revenue</div>
-                </div>
-                <TrendingUp className="w-8 h-8 text-orange-600" />
-              </div>
+          <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.pendingApprovals}</div>
+              <p className="text-xs text-muted-foreground">Awaiting approval</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{analytics.activeProjects}</div>
-                <div className="text-blue-700">Active Projects</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-yellow-50 border-yellow-200">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-600">{analytics.pendingVerifications}</div>
-                <div className="text-yellow-700">Pending Verifications</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{analytics.monthlyGrowth}%</div>
-                <div className="text-green-700">Monthly Growth</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="workers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="workers">Workers</TabsTrigger>
-            <TabsTrigger value="properties">Properties</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
+        {/* Main Content */}
+        <Tabs defaultValue="construction" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="construction">Construction Projects</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
-          {/* Workers Tab */}
-          <TabsContent value="workers" className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search workers..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filterRole} onValueChange={setFilterRole}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Filter by role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="manager">Managers</SelectItem>
-                    <SelectItem value="supervisor">Supervisors</SelectItem>
-                    <SelectItem value="designer">Designers</SelectItem>
-                    <SelectItem value="worker">Workers</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleAddWorker} className="bg-blue-600 hover:bg-blue-700">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add Worker
-              </Button>
-            </div>
+          {/* Construction Projects Tab */}
+          <TabsContent value="construction">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Construction Projects Management</CardTitle>
+                <Button 
+                  variant="outline" 
+                  onClick={loadAllData}
+                  disabled={constructionLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${constructionLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {constructionError && (
+                  <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <span className="text-red-700">{constructionError}</span>
+                  </div>
+                )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredWorkers.map((worker) => (
-                <Card key={worker.id} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <img 
-                          src={worker.avatar} 
-                          alt={worker.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="font-semibold">{worker.name}</h3>
-                          <Badge className={getRoleColor(worker.role)}>
-                            {worker.role.charAt(0).toUpperCase() + worker.role.slice(1)}
-                          </Badge>
+                {projects.length > 0 ? (
+                  <div className="space-y-4">
+                    {projects.map((project) => (
+                      <div key={project.id} className="border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-slate-800">{project.title}</h3>
+                              <Badge 
+                                variant="secondary"
+                                className={
+                                  project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                                  project.status === 'planning' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }
+                              >
+                                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                              </Badge>
+                              {project.approved ? (
+                                <Badge className="bg-green-100 text-green-800">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Approved
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-orange-300 text-orange-700">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Pending Approval
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <p className="text-slate-600 mb-3">{project.description}</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <MapPin className="w-4 h-4" />
+                                <span>{project.location}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Building className="w-4 h-4" />
+                                <span>{project.type.charAt(0).toUpperCase() + project.type.slice(1)}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <TrendingUp className="w-4 h-4" />
+                                <span>₹{project.budget.toLocaleString()}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm text-slate-500">
+                              <span>Progress: {project.progress}%</span>
+                              <span>Timeline: {project.timeline}</span>
+                              <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2 ml-6">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/construction/project/${project.id}`)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </Button>
+                            
+                            {!project.approved && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApproveProject(project.id, project.title)}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRejectProject(project.id, project.title)}
+                                  className="border-red-300 text-red-600 hover:bg-red-50"
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <Badge className={getStatusColor(worker.status)}>
-                        {worker.status.charAt(0).toUpperCase() + worker.status.slice(1)}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 mr-2 text-yellow-500" />
-                        {worker.rating} ({worker.projects} projects)
-                      </div>
-                      <div>{worker.experience} years experience</div>
-                      <div className="text-blue-600 font-medium">
-                        ₹{worker.hourlyRate}/hour
-                      </div>
-                      <div>Joined: {new Date(worker.joinDate).toLocaleDateString()}</div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <div className="text-xs text-gray-500 mb-2">Specializations:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {worker.specializations.slice(0, 2).map((spec, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {spec}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm">
-                        <Phone className="w-4 h-4 mr-2 text-gray-500" />
-                        {worker.contact}
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <Mail className="w-4 h-4 mr-2 text-gray-500" />
-                        {worker.email}
-                      </div>
-                    </div>
-                    
-                    <Separator className="my-4" />
-                    
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleStatusChange(worker.id, worker.status === 'active' ? 'inactive' : 'active')}
-                      >
-                        {worker.status === 'active' ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteWorker(worker.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Hammer className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-800 mb-2">No construction projects</h3>
+                    <p className="text-slate-600">No construction projects have been submitted yet.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {/* Properties Tab */}
-          <TabsContent value="properties" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Property Management</h3>
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Export Data
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {properties.map((property) => (
-                <Card key={property.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-semibold">{property.title}</h4>
-                      <Badge className={
-                        property.status === 'available' ? 'bg-green-100 text-green-800' :
-                        property.status === 'rented' ? 'bg-blue-100 text-blue-800' :
-                        property.status === 'sold' ? 'bg-purple-100 text-purple-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }>
-                        {property.status.charAt(0).toUpperCase() + property.status.slice(1)}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {property.location}
+          {/* Orders Tab */}
+          <TabsContent value="orders">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Orders</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {orders.length > 0 ? (
+                  <div className="space-y-4">
+                    {orders.slice(0, 10).map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">{order.property.title}</h4>
+                          <p className="text-sm text-muted-foreground">{order.property.location}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge 
+                              variant="secondary"
+                              className={
+                                order.status === 'active' ? 'bg-green-100 text-green-800' :
+                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }
+                            >
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </Badge>
+                            <Badge 
+                              variant="outline"
+                              className={
+                                order.paymentStatus === 'paid' ? 'border-green-500 text-green-700' :
+                                order.paymentStatus === 'pending' ? 'border-yellow-500 text-yellow-700' :
+                                'border-red-500 text-red-700'
+                              }
+                            >
+                              {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">₹{order.totalAmount.toLocaleString()}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <DollarSign className="w-4 h-4 mr-2" />
-                        {formatCurrency(property.price)}
-                      </div>
-                      <div className="flex items-center">
-                        <Building className="w-4 h-4 mr-2" />
-                        {property.landlord}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Badge variant={property.verified ? "default" : "secondary"}>
-                        {property.verified ? 'Verified' : 'Pending Verification'}
-                      </Badge>
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-6">
-            <div className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
-              <p className="text-gray-600">Manage platform users, landlords, and tenants</p>
-              <Button className="mt-4 bg-blue-600 hover:bg-blue-700">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Manage Users
-              </Button>
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Building className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-800 mb-2">No orders yet</h3>
+                    <p className="text-slate-600">No orders have been placed yet.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="text-center py-12">
-              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Analytics</h3>
-              <p className="text-gray-600">Detailed reports, charts, and insights</p>
-              <Button className="mt-4 bg-blue-600 hover:bg-blue-700">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                View Reports
-              </Button>
+          <TabsContent value="analytics">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Status Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Active Projects</span>
+                      <span className="font-semibold text-blue-600">{stats.activeProjects}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Completed Projects</span>
+                      <span className="font-semibold text-green-600">{stats.completedProjects}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Pending Approval</span>
+                      <span className="font-semibold text-orange-600">{stats.pendingApprovals}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Total Revenue</span>
+                      <span className="font-semibold text-green-600">₹{stats.totalRevenue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Total Orders</span>
+                      <span className="font-semibold text-blue-600">{stats.totalOrders}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600">Average Order Value</span>
+                      <span className="font-semibold text-purple-600">
+                        ₹{stats.totalOrders > 0 ? Math.round(stats.totalRevenue / stats.totalOrders).toLocaleString() : '0'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* System Status */}
-        <Card className="mt-8 bg-gray-50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">System Status</h3>
-                <p className="text-gray-600">All systems operational</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Platform</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Database</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Payments</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

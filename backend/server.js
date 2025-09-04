@@ -13,9 +13,10 @@ const orderRoutes = require('./routes/orders');
 const propertyRoutes = require('./routes/properties');
 const contactRoutes = require('./routes/contact');
 const constructionRoutes = require('./routes/construction');
+const wishlistRoutes = require('./routes/wishlist');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080; // Backend should run on 8080 to match frontend expectations
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -29,6 +30,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/construction', constructionRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Support legacy contact URL without /api prefix
 app.get('/contact', (req, res) => {

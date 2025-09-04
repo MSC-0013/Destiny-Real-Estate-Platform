@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
-import { getCurrentUser, setCurrentUser, getAllUsers, addUser } from '@/utils/localStorage';
+import { getCurrentUser, setCurrentUser } from '@/utils/localStorage';
 import { api, setAuthToken } from '@/lib/api';
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
-import { v4 as uuidv4 } from 'uuid';
 
 interface AuthContextType {
   user: User | null;
@@ -15,7 +13,7 @@ interface AuthContextType {
   isAdmin: boolean;
 }
 
-interface RegisterData {
+export interface RegisterData {
   name: string;
   email: string;
   password: string;
@@ -27,9 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
 
@@ -40,16 +36,19 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
+  // Load current user from localStorage on mount
   useEffect(() => {
     const currentUser = getCurrentUser();
     if (currentUser) {
       setUser(currentUser);
+      if ((currentUser as any).token) setAuthToken((currentUser as any).token);
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+  // Login function
+  const login = async (email: string, password: string) => {
     try {
-      // Check for admin credentials
+      // Admin shortcut for demo
       if (email === 'admin@gmail.com' && password === 'admin123') {
         const adminUser: User = {
           id: 'admin-1',
@@ -59,103 +58,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           verified: true,
           createdAt: new Date().toISOString(),
           rating: 5.0,
-          reviews: 0
+          reviews: 0,
         };
         setUser(adminUser);
         setCurrentUser(adminUser);
         return { success: true, message: 'Admin login successful!' };
       }
 
-      // Try backend first
       const resp = await api.post('/auth/login', { email, password });
-      if (resp.status === 200) {
-        const data = resp.data;
-        const backendUser = { ...data.user, token: data.token } as any;
-        setAuthToken(data.token);
-        setUser(backendUser);
-        setCurrentUser(backendUser);
-        return { success: true, message: 'Login successful!' };
-      }
+      const { user: backendUser, token } = resp.data;
 
-      // Fallback to local users
-      const users = getAllUsers();
-      const foundUser = users.find(u => u.email === email);
-      if (!foundUser) return { success: false, message: 'User not found. Please register first.' };
-      setUser(foundUser);
-      setCurrentUser(foundUser);
-      return { success: true, message: 'Login successful! (local)' };
-    } catch (error) {
+      setAuthToken(token);
+      const userWithToken = { ...backendUser, token };
+      setUser(userWithToken);
+      setCurrentUser(userWithToken);
+
+      return { success: true, message: 'Login successful!' };
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        return { success: false, message: 'Invalid email or password.' };
+      }
       return { success: false, message: 'Login failed. Please try again.' };
     }
   };
 
-  const register = async (userData: RegisterData): Promise<{ success: boolean; message: string }> => {
+  // Register function
+  const register = async (userData: RegisterData) => {
     try {
-      // Try backend
       const resp = await api.post('/auth/signup', userData);
-      if (resp.status === 200) {
-        const data = resp.data;
-        const backendUser = { ...data.user, token: data.token } as any;
-        setAuthToken(data.token);
-        setUser(backendUser);
-        setCurrentUser(backendUser);
-        return { success: true, message: 'Registration successful!' };
-      }
+      const { user: backendUser, token } = resp.data;
 
-      // Fallback to local storage
-      const users = getAllUsers();
-      if (users.find(u => u.email === userData.email)) {
-        return { success: false, message: 'User with this email already exists.' };
+      setAuthToken(token);
+      const userWithToken = { ...backendUser, token };
+      setUser(userWithToken);
+      setCurrentUser(userWithToken);
+
+      return { success: true, message: 'Registration successful!' };
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        return { success: false, message: 'User with this email already exists. Please log in.' };
       }
-      const newUser: User = {
-        id: uuidv4(),
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        phone: userData.phone,
-        verified: false,
-        createdAt: new Date().toISOString(),
-        rating: 0,
-        reviews: 0
-      };
-      addUser(newUser);
-      setUser(newUser);
-      setCurrentUser(newUser);
-      return { success: true, message: 'Registration successful! (local)' };
-    } catch (error) {
       return { success: false, message: 'Registration failed. Please try again.' };
     }
   };
 
+  // Logout function
   const logout = () => {
     setUser(null);
     setCurrentUser(null);
-    setAuthToken(undefined);
+    setAuthToken(undefined); // clears axios header
   };
 
+  // Update profile
   const updateProfile = (updates: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      setCurrentUser(updatedUser);
-    }
+    if (!user) return;
+    const updatedUser = { ...user, ...updates };
+    setUser(updatedUser);
+    setCurrentUser(updatedUser);
   };
 
-  const isAuthenticated = user !== null;
+  const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin';
 
-  const value: AuthContextType = {
-    user,
-    login,
-    register,
-    logout,
-    updateProfile,
-    isAuthenticated,
-    isAdmin
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, isAuthenticated, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

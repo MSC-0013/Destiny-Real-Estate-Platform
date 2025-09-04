@@ -1,288 +1,321 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import PropertyCard from '@/components/PropertyCard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Heart, 
+  MapPin, 
+  Filter, 
+  Search, 
+  RefreshCw, 
+  AlertCircle,
+  Trash2,
+  Eye
+} from 'lucide-react';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { Heart, Search, Filter, MapPin, X, Home } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const FavoritesPage = () => {
-  const { wishlist, clearWishlist, wishlistCount } = useWishlist();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { wishlist, loading, error, removeFromWishlist, refreshWishlist, clearError } = useWishlist();
+  const { toast } = useToast();
+  const [filteredWishlist, setFilteredWishlist] = useState(wishlist);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterLocation, setFilterLocation] = useState('all');
-  const [sortBy, setSortBy] = useState('recent');
+  const [sortBy, setSortBy] = useState<'addedAt' | 'price' | 'rating'>('addedAt');
 
-  // Get unique property types and locations for filters
-  const propertyTypes = ['all', ...new Set(wishlist.map(property => property.type))];
-  const locations = ['all', ...new Set(wishlist.map(property => property.location.split(',')[1]?.trim() || property.location))];
+  useEffect(() => {
+    if (user) {
+      refreshWishlist();
+    }
+  }, [user]);
 
-  // Filter and sort wishlist
-  const filteredWishlist = wishlist
-    .filter(property => {
-      const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           property.location.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === 'all' || property.type === filterType;
-      const matchesLocation = filterLocation === 'all' || property.location.includes(filterLocation);
-      
-      return matchesSearch && matchesType && matchesLocation;
-    })
-    .sort((a, b) => {
+  useEffect(() => {
+    let filtered = wishlist;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(item =>
+        item.propertyData.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.propertyData.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.propertyData.type.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
+        case 'price':
+          return b.propertyData.price - a.propertyData.price;
         case 'rating':
-          return b.rating - a.rating;
-        case 'recent':
+          return b.propertyData.rating - a.propertyData.rating;
+        case 'addedAt':
         default:
-          return 0; // Keep original order for recently added
+          return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
       }
     });
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setFilterType('all');
-    setFilterLocation('all');
-    setSortBy('recent');
+    setFilteredWishlist(filtered);
+  }, [wishlist, searchTerm, sortBy]);
+
+  const handleRemoveFromWishlist = async (propertyId: string, propertyTitle: string) => {
+    try {
+      await removeFromWishlist(propertyId);
+      toast({
+        title: "Removed from Favorites",
+        description: `${propertyTitle} has been removed from your favorites.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove from favorites. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const hasActiveFilters = searchTerm || filterType !== 'all' || filterLocation !== 'all' || sortBy !== 'recent';
+  const handleViewProperty = (propertyId: string) => {
+    navigate(`/property/${propertyId}`);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <Heart className="w-16 h-16 text-red-400 mx-auto mb-6" />
+          <h1 className="text-3xl font-bold text-slate-800 mb-4">Login Required</h1>
+          <p className="text-slate-600 mb-8">
+            Please login to view your favorite properties
+          </p>
+          <Button onClick={() => navigate('/login')} className="bg-blue-600 hover:bg-blue-700">
+            Login Now
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent mb-2">
-                My Wishlist 💖
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                {wishlistCount > 0 
-                  ? `You have ${wishlistCount} favorite ${wishlistCount === 1 ? 'property' : 'properties'}`
-                  : 'No favorite properties yet'
-                }
-              </p>
-            </div>
-            {wishlistCount > 0 && (
-              <Button 
-                variant="outline" 
-                onClick={clearWishlist}
-                className="border-red-200 text-red-600 hover:bg-red-50"
-              >
-                <Heart className="w-4 h-4 mr-2" />
-                Clear All
-              </Button>
-            )}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-full mb-6">
+            <Heart className="w-8 h-8 text-white fill-current" />
           </div>
+          <h1 className="text-5xl font-serif font-bold bg-gradient-to-r from-red-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-6">
+            My Favorites
+          </h1>
+          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            Your saved properties and dream homes. Keep track of properties you love and want to revisit.
+          </p>
         </div>
 
-        {wishlistCount === 0 ? (
-          // Empty State
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gradient-to-br from-pink-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Heart className="w-12 h-12 text-white" />
-            </div>
-            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-              Your wishlist is empty
-            </h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Start exploring properties and add your favorites to your wishlist. 
-              Click the heart icon on any property to save it here.
-            </p>
-            <div className="flex justify-center space-x-4">
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="flex items-center justify-center p-8">
+            <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+            <span>Loading your favorites...</span>
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg mb-8">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700">{error}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                clearError();
+                refreshWishlist();
+              }}
+              className="ml-auto"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Search and Filter Bar */}
+        {wishlist.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 mb-8">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search your favorites..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-slate-500" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="addedAt">Recently Added</option>
+                  <option value="price">Price (High to Low)</option>
+                  <option value="rating">Rating (High to Low)</option>
+                </select>
+              </div>
+
               <Button 
-                onClick={() => window.location.href = '/listings'}
-                className="bg-gradient-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700"
+                variant="outline" 
+                onClick={refreshWishlist}
+                disabled={loading}
+                className="border-slate-300 hover:border-blue-500 hover:text-blue-600"
               >
-                <Search className="w-4 h-4 mr-2" />
-                Browse Properties
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => window.location.href = '/'}
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Back to Home
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
               </Button>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* Favorites Content */}
+        {filteredWishlist.length > 0 ? (
           <>
-            {/* Filters and Search */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-              <div className="flex flex-col lg:flex-row gap-4">
-                {/* Search */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search your favorites..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue placeholder="Property Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {propertyTypes.map(type => (
-                        <SelectItem key={type} value={type}>
-                          {type === 'all' ? 'All Types' : type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filterLocation} onValueChange={setFilterLocation}>
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue placeholder="Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map(location => (
-                        <SelectItem key={location} value={location}>
-                          {location === 'all' ? 'All Locations' : location}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue placeholder="Sort By" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recent">Recently Added</SelectItem>
-                      <SelectItem value="price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high">Price: High to Low</SelectItem>
-                      <SelectItem value="rating">Highest Rated</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {hasActiveFilters && (
-                    <Button 
-                      variant="outline" 
-                      onClick={clearFilters}
-                      className="whitespace-nowrap"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Active Filters */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
-                  {searchTerm && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      Search: "{searchTerm}"
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setSearchTerm('')}
-                      />
-                    </Badge>
-                  )}
-                  {filterType !== 'all' && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      Type: {filterType}
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setFilterType('all')}
-                      />
-                    </Badge>
-                  )}
-                  {filterLocation !== 'all' && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      Location: {filterLocation}
-                      <X
-                        className="w-3 h-3 ml-2 cursor-pointer"
-                        onClick={() => setFilterLocation('all')}
-                      />
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Results Summary */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-gray-600">
-                Showing {filteredWishlist.length} of {wishlistCount} favorite properties
-              </p>
-              <div className="flex items-center space-x-2">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-500">
-                  {filteredWishlist.length !== wishlistCount ? 'Filtered' : 'All favorites'}
-                </span>
-              </div>
+              <h2 className="text-2xl font-semibold text-slate-800">
+                Your Favorite Properties
+              </h2>
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 px-3 py-1">
+                {filteredWishlist.length} {filteredWishlist.length === 1 ? 'property' : 'properties'}
+              </Badge>
             </div>
 
-            {/* Properties Grid */}
-            {filteredWishlist.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {filteredWishlist.map((property) => (
-                  <div key={property.id} className="transform hover:scale-[1.02] transition-transform duration-200">
-                    <PropertyCard property={property} />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredWishlist.map((item) => (
+                <Card key={item.id} className="group hover:shadow-xl transition-all duration-300 border-slate-200">
+                  <div className="relative">
+                    <img
+                      src={item.propertyData.image}
+                      alt={item.propertyData.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
+                    <div className="absolute top-3 right-3 flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewProperty(item.propertyId)}
+                        className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white/90"
+                      >
+                        <Eye className="w-4 h-4 text-slate-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFromWishlist(item.propertyId, item.propertyData.title)}
+                        className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white/90 text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground">
+                      {item.propertyData.type}
+                    </Badge>
                   </div>
-                ))}
-              </div>
-            ) : (
-              // No Results
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No properties match your filters
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Try adjusting your search criteria to see more results
-                </p>
-                <Button onClick={clearFilters} variant="outline">
-                  <X className="w-4 h-4 mr-2" />
-                  Clear Filters
-                </Button>
-              </div>
-            )}
+                  
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg text-slate-800 mb-2 line-clamp-1">
+                      {item.propertyData.title}
+                    </h3>
+                    
+                    <div className="flex items-center text-slate-600 mb-3">
+                      <MapPin className="w-4 h-4 mr-1" />
+                      <span className="text-sm">{item.propertyData.location}</span>
+                    </div>
 
-            {/* Suggestions */}
-            {filteredWishlist.length > 0 && (
-              <div className="mt-12 text-center">
-                <h3 className="text-xl font-semibold mb-4">Want to explore more?</h3>
-                <div className="flex justify-center space-x-4">
-                  <Button 
-                    onClick={() => window.location.href = '/listings'}
-                    className="bg-gradient-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Discover More Properties
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => window.location.href = '/marketplace'}
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Explore Marketplace
-                  </Button>
-                </div>
-              </div>
-            )}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                        <span className="text-sm font-medium">{item.propertyData.rating}</span>
+                        <span className="text-xs text-slate-500">({item.propertyData.reviews})</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-blue-600">
+                          ₹{item.propertyData.price.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-slate-500">per month</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleViewProperty(item.propertyId)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      >
+                        View Details
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleRemoveFromWishlist(item.propertyId, item.propertyData.title)}
+                        className="border-red-300 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                      <p className="text-xs text-slate-500">
+                        Added on {new Date(item.addedAt).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </>
+        ) : (
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-100 rounded-full mb-6">
+              <Heart className="w-10 h-10 text-slate-400" />
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-800 mb-3">
+              {searchTerm ? 'No matching favorites' : 'No favorites yet'}
+            </h3>
+            <p className="text-slate-600 mb-8 max-w-md mx-auto">
+              {searchTerm 
+                ? 'Try adjusting your search terms to find properties in your favorites.'
+                : 'Start exploring properties and add them to your favorites to see them here.'
+              }
+            </p>
+            <div className="flex gap-4 justify-center">
+              {searchTerm && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSearchTerm('')}
+                  className="border-slate-300 hover:border-blue-500 hover:text-blue-600"
+                >
+                  Clear Search
+                </Button>
+              )}
+              <Button 
+                onClick={() => navigate('/listings')}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Browse Properties
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { Heart, MapPin, Users, Calendar, Star } from 'lucide-react';
+import { Heart, MapPin, Users, Calendar, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -8,20 +8,20 @@ import { Property as PropertyType } from '@/data/properties';
 
 interface Property {
   id: string;
-  title: string;
-  location: string;
-  price: number;
-  duration: string;
-  guests: number;
-  bedrooms: number;
-  bathrooms: number;
-  image: string;
-  rating: number;
-  reviews: number;
-  type: string;
-  amenities: string[];
-  available: boolean;
-  verified: boolean;
+  title?: string;
+  location?: string;
+  price?: number;
+  duration?: string;
+  guests?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  image?: string;
+  rating?: number;
+  reviews?: number;
+  type?: string;
+  amenities?: string[];
+  available?: boolean;
+  verified?: boolean;
 }
 
 interface PropertyCardProps {
@@ -31,37 +31,45 @@ interface PropertyCardProps {
 }
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isInWishlist, loading } = useWishlist();
   const { toast } = useToast();
-  const isFavorite = isInWishlist(property.id);
+  const isFavorite = isInWishlist(property.id || '');
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (isFavorite) {
-      removeFromWishlist(property.id);
+    try {
+      if (isFavorite) {
+        await removeFromWishlist(property.id || '');
+        toast({
+          title: "Removed from Wishlist",
+          description: `${property.title || 'Property'} has been removed from your wishlist.`,
+        });
+      } else {
+        await addToWishlist(property);
+        toast({
+          title: "Added to Wishlist",
+          description: `${property.title || 'Property'} has been added to your wishlist.`,
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Removed from Wishlist",
-        description: `${property.title} has been removed from your wishlist.`,
-      });
-    } else {
-      addToWishlist(property);
-      toast({
-        title: "Added to Wishlist",
-        description: `${property.title} has been added to your wishlist.`,
+        title: "Error",
+        description: "Failed to update wishlist. Please try again.",
+        variant: "destructive"
       });
     }
   };
 
   return (
     <div className="property-card group cursor-pointer overflow-hidden">
-      <Link to={`/property/${property.id}`} className="block">
+      <Link to={`/property/${property.id || 'unknown'}`} className="block">
         {/* Image Container */}
         <div className="relative overflow-hidden rounded-t-lg">
           <img 
-            src={property.image} 
-            alt={property.title}
+            src={property.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'} 
+            alt={property.title || 'Property'}
             className="w-full h-48 sm:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
           />
           
@@ -72,7 +80,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                 Verified
               </Badge>
             )}
-            {!property.available && (
+            {property.available === false && (
               <Badge variant="destructive">
                 Not Available
               </Badge>
@@ -87,15 +95,20 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                 isFavorite ? 'text-red-500' : 'text-gray-600'
               }`}
               onClick={handleFavoriteClick}
+              disabled={loading}
             >
-              <Heart 
-                className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} 
-              />
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Heart 
+                  className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} 
+                />
+              )}
             </Button>
           </div>
 
           <Badge className="absolute bottom-3 left-3 bg-primary text-primary-foreground">
-            {property.type}
+            {property.type || 'Property'}
           </Badge>
         </div>
 
@@ -104,45 +117,45 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           {/* Title and Rating */}
           <div className="flex justify-between items-start">
             <h3 className="font-semibold text-lg text-card-foreground group-hover:text-primary transition-colors line-clamp-1">
-              {property.title}
+              {property.title || 'Property'}
             </h3>
             <div className="flex items-center gap-1 ml-2">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-medium">{property.rating}</span>
-              <span className="text-xs text-muted-foreground">({property.reviews})</span>
+              <span className="text-sm font-medium">{property.rating || 0}</span>
+              <span className="text-xs text-muted-foreground">({property.reviews || 0})</span>
             </div>
           </div>
 
           {/* Location */}
           <div className="flex items-center text-muted-foreground">
             <MapPin className="w-4 h-4 mr-1" />
-            <span className="text-sm">{property.location}</span>
+            <span className="text-sm">{property.location || 'Location not specified'}</span>
           </div>
 
           {/* Property Details */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center">
               <Users className="w-4 h-4 mr-1" />
-              <span>{property.guests} guests</span>
+              <span>{property.guests || 0} guests</span>
             </div>
             <div className="flex items-center">
-              <span>{property.bedrooms} bed</span>
+              <span>{property.bedrooms || 0} bed</span>
             </div>
             <div className="flex items-center">
-              <span>{property.bathrooms} bath</span>
+              <span>{property.bathrooms || 0} bath</span>
             </div>
           </div>
 
           {/* Amenities */}
           <div className="flex flex-wrap gap-1">
-            {property.amenities.slice(0, 3).map((amenity) => (
+            {(property.amenities || []).slice(0, 3).map((amenity) => (
               <Badge key={amenity} variant="secondary" className="text-xs">
                 {amenity}
               </Badge>
             ))}
-            {property.amenities.length > 3 && (
+            {(property.amenities || []).length > 3 && (
               <Badge variant="secondary" className="text-xs">
-                +{property.amenities.length - 3} more
+                +{(property.amenities || []).length - 3} more
               </Badge>
             )}
           </div>
@@ -152,10 +165,10 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             <div>
               <div className="flex items-center gap-1">
                 <span className="text-xl font-bold text-primary">
-                  ${property.price.toLocaleString()}
+                  ₹{(property.price || 0).toLocaleString()}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  /{property.duration}
+                  /{property.duration || 'month'}
                 </span>
               </div>
             </div>

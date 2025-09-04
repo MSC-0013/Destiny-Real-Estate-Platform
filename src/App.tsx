@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { WishlistProvider } from "./contexts/WishlistContext";
 import { OrdersProvider } from "./contexts/OrdersContext";
+import { ConstructionProvider } from "./contexts/ConstructionContext";
 import { useEffect } from "react";
 import { initializeDefaultData } from "./utils/localStorage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -27,6 +28,7 @@ import NotFound from "./pages/NotFound";
 // New Pages
 import MarketplacePage from "./pages/MarketplacePage";
 import ConstructionPage from "./pages/ConstructionPage";
+import ConstructionModelDetailPage from "./pages/ConstructionModelDetailPage";
 import NeighborhoodsPage from "./pages/NeighborhoodsPage";
 import NeighborhoodDetailPage from "./pages/NeighborhoodDetailPage";
 import ChatPage from "./pages/ChatPage";
@@ -38,6 +40,7 @@ import BlogPage from "./pages/BlogPage";
 import CareersPage from "./pages/CareersPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ConstructionChatbotPage from "./pages/ConstructionChatbotPage";
+import AddPropertyPage from "./pages/AddPropertyPage";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +55,8 @@ const App = () => {
       <AuthProvider>
         <WishlistProvider>
           <OrdersProvider>
-            <TooltipProvider>
+            <ConstructionProvider>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -62,12 +66,20 @@ const App = () => {
               <Route path="/listings" element={<ListingsPage />} />
               <Route path="/marketplace" element={<MarketplacePage />} />
               <Route path="/construction" element={<ConstructionPage />} />
+              <Route path="/construction/model/:id" element={<ConstructionModelDetailPage />} />
               <Route path="/construction/chatbot" element={<ConstructionChatbotPage />} />
               <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
               <Route path="/neighborhood/:id" element={<NeighborhoodDetailPage />} />
+              <Route path="/forgot-password" element={<h1>Coming Soon...</h1>} />
+
               
               {/* Property Routes */}
               <Route path="/property/:id" element={<PropertyDetailPage />} />
+              <Route path="/add-property" element={
+                <ProtectedRoute>
+                  <AddPropertyPage />
+                </ProtectedRoute>
+              } />
               <Route path="/checkout/:id" element={
                 <ProtectedRoute>
                   <CheckoutPage />
@@ -138,7 +150,8 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
               </BrowserRouter>
-            </TooltipProvider>
+              </TooltipProvider>
+            </ConstructionProvider>
           </OrdersProvider>
         </WishlistProvider>
       </AuthProvider>
