@@ -71,7 +71,7 @@ router.post('/login', async (req, res) => {
 // ================= EMAIL CHECK =================
 router.get('/exists', async (req, res) => {
   try {
-    const email = (req.query.email || '').toString().toLowerCase().trim();
+    const email = (req.query.email || '').toLowerCase().trim();
     if (!email) return res.status(400).json({ error: 'Email query is required' });
     const exists = await User.exists({ email });
     res.json({ exists: !!exists });

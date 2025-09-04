@@ -1,11 +1,15 @@
-// Load env from backend/.env first, then try project root .env
+// Load environment variables
 const path = require('path');
 require('dotenv').config();
 if (!process.env.PORT && !process.env.MONGODB_URI && !process.env.MONGO_URI) {
   require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 }
+
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
 const { connectToDatabase } = require('./config/db');
 
 const authRoutes = require('./routes/auth');
@@ -16,11 +20,20 @@ const constructionRoutes = require('./routes/construction');
 const wishlistRoutes = require('./routes/wishlist');
 
 const app = express();
-const PORT = process.env.PORT || 8080; // Backend should run on 8080 to match frontend expectations
+const PORT = process.env.PORT || 8080;
 
-app.use(cors({ origin: true, credentials: true }));
+// ================= CORS =================
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const corsOptions = {
+  origin: FRONTEND_URL,
+  credentials: true,
+};
+app.use(cors(corsOptions));
+
+// ================= MIDDLEWARE =================
 app.use(express.json());
 
+// ================= ROUTES =================
 app.get('/', (_req, res) => {
   res.json({ status: 'ok', service: 'Destiny Backend', version: '1.0.0' });
 });
@@ -32,13 +45,13 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/construction', constructionRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 
-// Support legacy contact URL without /api prefix
+// Legacy contact URL
 app.get('/contact', (req, res) => {
   const { service, model, property } = req.query || {};
   res.json({ ok: true, service: service || null, model: model || null, property: property || null });
 });
 
-// Minimal SSR-like HTML for direct chatbot access on backend
+// Minimal SSR-like HTML for chatbot
 app.get('/construction/chatbot', (req, res) => {
   const model = req.query.model || '';
   res.setHeader('Content-Type', 'text/html');
@@ -48,7 +61,7 @@ app.get('/construction/chatbot', (req, res) => {
     <body>
       <h1>Construction Chatbot</h1>
       <p>Model: ${String(model)}</p>
-      <p>This route is API-only. Please use the frontend at /construction/chatbot?model=${String(model)} to submit details.</p>
+      <p>Please use the frontend at /construction/chatbot?model=${String(model)} to submit details.</p>
     </body>
   </html>`);
 });
@@ -65,15 +78,15 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// ================= DB CONNECTION =================
 connectToDatabase(process.env.MONGODB_URI || process.env.MONGO_URI)
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Destiny backend running on http://localhost:${PORT}`);
+      console.log(`Frontend allowed URL: ${FRONTEND_URL}`);
     });
   })
   .catch((err) => {
     console.error('Failed to connect to MongoDB:', err.message);
     process.exit(1);
   });
-
-
