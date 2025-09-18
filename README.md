@@ -1,122 +1,189 @@
-# Welcome to your Lovable project
+🏡 Destiny Real Estate Platform
 
-## Project info
+A full-stack real estate platform where users can rent, lease, or construct homes. The project includes authentication, property management, admin features, and a modern UI for browsing and managing listings.
 
-**URL**: https://lovable.dev/projects/660b0f74-8a3a-46a6-b8b9-697d318db115
+Deployed URL : https://destiny-real-estate-platform.vercel.app[https://destiny-real-estate-platform.vercel.app]
 
-## How can I edit this code?
+📑 Table of Contents
 
-There are several ways of editing your application.
+About
 
-**Use Lovable**
+Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/660b0f74-8a3a-46a6-b8b9-697d318db115) and start prompting.
+Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+Project Structure
 
-**Use your preferred IDE**
+Installation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Environment Variables
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Available Scripts
 
-Follow these steps:
+Deployment
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Screenshots
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Future Improvements
 
-# Step 3: Install the necessary dependencies.
-npm i
+License
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+📖 About
 
-**Edit a file directly in GitHub**
+Destiny Real Estate Platform is designed to connect property owners, tenants, and builders.
+Users can:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Rent homes
 
-**Use GitHub Codespaces**
+Put homes up for rent
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Manage property construction requests
+Admins can manage listings, users, and approvals.
 
-## What technologies are used for this project?
+✨ Features
 
-This project is built with:
+✅ User authentication (JWT / Passport / NextAuth)
+✅ Role-based access (User / Admin)
+✅ Add, update, delete property listings
+✅ Rent / lease management
+✅ Image upload for properties
+✅ Responsive design for desktop & mobile
+✅ API-driven backend with REST endpoints
+✅ MongoDB/SQL database integration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+🛠️ Tech Stack
+Frontend
 
-## How can I deploy this project?
+React / Next.js – UI framework
 
-Simply open [Lovable](https://lovable.dev/projects/660b0f74-8a3a-46a6-b8b9-697d318db115) and click on Share -> Publish.
+Tailwind CSS – Styling
 
-## Can I connect a custom domain to my Lovable project?
+Axios / Fetch API – API calls
 
-Yes, you can!
+React Router / Next Router – Navigation
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+State Management – Context API / Redux (if used)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
-# Destiny-Real-Estate-Platform
+Backend
 
-## Backend (Local)
+Node.js – Runtime
 
-A lightweight Express backend is included for auth, orders, properties, contact and construction workflows.
+Express.js – Web framework
 
-Run locally:
+MongoDB (Mongoose) / SQL – Database
 
-```
-npm run server
-```
+JWT Authentication – Security
 
-Run frontend and backend together:
+Multer / Cloudinary – File & image uploads
 
-```
-npm run dev:all
-```
+DevOps
 
-Base URL: `http://localhost:8080`
+Vercel – Frontend deployment
 
-Key endpoints:
-- MongoDB setup:
+Render / Railway / Heroku / Mongo Atlas – Backend hosting
 
-Create a `.env` file in project root (see `.env.example` format below) and run Mongo locally:
+GitHub Actions – CI/CD (optional)
 
-```
-MONGODB_URI=mongodb://127.0.0.1:27017/destiny
-MONGODB_DB=destiny
-JWT_SECRET=change-me
-PORT=8080
-VITE_API_BASE=http://localhost:8080/api
-```
+📂 Project Structure
 
-Then start both servers with `npm run dev:all`.
+Destiny-Real-Estate-Platform/
+│
+├── backend/
+│   ├── server.js              # Entry point
+│   ├── config/
+│   │   └── db.js              # Database connection
+│   ├── routes/
+│   │   ├── userRoutes.js      # User-related routes
+│   │   ├── propertyRoutes.js  # Property CRUD routes
+│   │   └── authRoutes.js      # Login / Signup
+│   ├── models/
+│   │   ├── User.js            # User schema
+│   │   ├── Property.js        # Property schema
+│   │   └── Booking.js         # Rent/Lease schema
+│   ├── controllers/
+│   │   ├── userController.js
+│   │   ├── propertyController.js
+│   │   └── authController.js
+│   ├── middleware/
+│   │   ├── authMiddleware.js  # JWT protection
+│   │   └── errorHandler.js
+│   └── utils/
+│       └── upload.js          # File upload utils
+│
+├── frontend/
+│   ├── public/                # Static assets
+│   ├── src/
+│   │   ├── components/        # Reusable UI
+│   │   ├── pages/             # Page routes (Next.js)
+│   │   ├── context/           # State management
+│   │   ├── services/          # API calls
+│   │   ├── styles/            # Tailwind / CSS
+│   │   └── App.js             # Root app
+│   ├── package.json
+│
+├── .env.example               # Example environment variables
+├── package.json               # Root dependencies
+├── README.md
+└── LICENSE
+⚙️ Installation
+Clone the repo
+git clone https://github.com/MSC-0013/Destiny-Real-Estate-Platform.git
+cd Destiny-Real-Estate-Platform
 
-- `GET /api/properties` – list properties (query: `city`, `type`)
-- `GET /api/properties/:id` – property detail
-- `POST /api/auth/signup` – create user
-- `POST /api/auth/login` – login user
-- `GET /api/auth/me` – current user (mock token)
-- `GET /api/orders` – list orders
-- `POST /api/orders` – create order
-- `GET /api/orders/:id` – order detail
-- `GET /api/contact` – supports `service` and `model` query, e.g. `/api/contact?service=construction&model=hm-005`
-- `POST /api/contact` – submit contact ticket
-- `GET /api/construction/contracts` – list construction contracts
-- `POST /api/construction/contracts` – create contract
-- `POST /api/construction/contracts/:id/approve` – approve contract
-- `POST /api/construction/contracts/:id/reject` – reject contract
+Install dependencies
+# Backend
+cd backend
+npm install
+
+# Frontend
+cd ../frontend
+npm install
+
+🔑 Environment Variables
+
+Create a .env file in the backend/ folder:PORT=5000
+MONGO_URI=your_mongo_connection_string
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_URL=your_cloudinary_url   # if using image uploads
+
+🚀 Available Scripts
+Backend
+
+cd backend
+npm run dev    # Start dev server with nodemon
+npm start      # Start production server
+Frontend
+
+
+cd frontend
+npm run dev    # Start frontend dev server
+npm run build  # Build frontend for production
+npm start      # Run production build
+
+│🌐 Deployment
+
+Frontend: deployed on Vercel
+
+Backend: deploy on Render / Railway / Heroku
+
+Database: MongoDB Atlas (cloud-hosted)
+
+🖼️ Screenshots
+
+(Add images of homepage, login, property listing, admin dashboard)
+
+🚧 Future Improvements
+
+Payment integration (Stripe, Razorpay)
+
+Search & filter properties
+
+Real-time chat between owner & tenant
+
+Admin analytics dashboard
+
+Mobile app version
+
+📜 License
+
+This project is licensed under the MIT License.
