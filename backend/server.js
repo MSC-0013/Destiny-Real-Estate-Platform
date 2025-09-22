@@ -27,24 +27,22 @@ const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
   : [];
 
+// Allow CORS for allowed origins and localhost
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (like Postman, curl)
+    // allow requests with no origin (like Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+    if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS: " + origin));
   },
-  credentials: true, // allow cookies/auth headers
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
-
-// ================= MIDDLEWARE =================
 app.use(express.json());
 
 // ================= ROUTES =================
+// Base route
 app.get("/", (_req, res) => {
   res.json({
     status: "ok",
@@ -54,12 +52,13 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/properties", propertyRoutes);
-app.use("/api/contact", contactRoutes);
-app.use("/api/construction", constructionRoutes);
-app.use("/api/wishlist", wishlistRoutes);
+// Mount auth routes at /auth (so frontend can call /auth/login)
+app.use("/auth", authRoutes);
+app.use("/orders", orderRoutes);
+app.use("/properties", propertyRoutes);
+app.use("/contact", contactRoutes);
+app.use("/construction", constructionRoutes);
+app.use("/wishlist", wishlistRoutes);
 
 // Legacy contact URL
 app.get("/contact", (req, res) => {
@@ -95,7 +94,6 @@ app.use((req, res) => {
 });
 
 // Error handler
-// eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
