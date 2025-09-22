@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const cloudinary = require('../cloudinary');
+const cloudinary = require('../config/cloudinaryConfig');
+const upload = require('../config/multerConfig'); 
 const Property = require('../models/Property');
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
-// Multer setup
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+
 
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
