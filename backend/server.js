@@ -1,13 +1,12 @@
 // Load environment variables
 const path = require('path');
 require('dotenv').config();
-if (!process.env.PORT && !process.env.MONGODB_URI && !process.env.MONGO_URI) {
+if (!process.env.PORT && !process.env.MONGO_URI) {
   require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 }
 
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const { connectToDatabase } = require('./config/db');
@@ -23,12 +22,8 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // ================= CORS =================
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const corsOptions = {
-  origin: FRONTEND_URL,
-  credentials: true,
-};
-app.use(cors(corsOptions));
+// ✅ Allow ALL origins (not recommended for production)
+app.use(cors({ origin: "*", credentials: true }));
 
 // ================= MIDDLEWARE =================
 app.use(express.json());
@@ -79,14 +74,14 @@ app.use((err, _req, res, _next) => {
 });
 
 // ================= DB CONNECTION =================
-connectToDatabase(process.env.MONGODB_URI || process.env.MONGO_URI)
+connectToDatabase(process.env.MONGO_URI)
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Destiny backend running on http://localhost:${PORT}`);
-      console.log(`Frontend allowed URL: ${FRONTEND_URL}`);
+      console.log(`✅ Destiny backend running on http://localhost:${PORT}`);
+      console.log(`✅ CORS: All origins allowed`);
     });
   })
   .catch((err) => {
-    console.error('Failed to connect to MongoDB:', err.message);
+    console.error('❌ Failed to connect to MongoDB:', err.message);
     process.exit(1);
   });
