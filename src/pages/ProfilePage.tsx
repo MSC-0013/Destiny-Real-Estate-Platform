@@ -57,22 +57,8 @@ const ProfilePage = () => {
   };
 
   const bookingHistory = [
-    {
-      id: '1',
-      property: 'Modern Downtown Studio',
-      location: 'Downtown, New York',
-      duration: 'Mar 2024 - Jun 2024',
-      amount: '₹3,600',
-      status: 'Completed'
-    },
-    {
-      id: '2',
-      property: 'Luxury Penthouse Suite',
-      location: 'Manhattan, New York',
-      duration: 'Jan 2024 - Feb 2024',
-      amount: '₹7,000',
-      status: 'Completed'
-    }
+
+    
   ];
 
   const paymentMethods = [
