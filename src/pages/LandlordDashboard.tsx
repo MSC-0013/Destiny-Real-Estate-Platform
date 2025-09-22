@@ -92,76 +92,15 @@ const LandlordDashboard = () => {
   useEffect(() => {
     // Load mock data
     const mockProperties: Property[] = [
-      {
-        id: 'p1',
-        title: 'Luxury 3BHK Sea View Apartment',
-        location: 'Bandra West',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        price: 85000,
-        status: 'rented',
-        type: 'Apartment',
-        bedrooms: 3,
-        area: 1800,
-        tenant: 'Rajesh Kumar',
-        monthlyRent: 85000,
-        verified: true,
-        verificationDetails: {
-          documents: ['Property Tax Receipt', 'Building Plan', 'Fire Safety Certificate'],
-          inspectionDate: '2024-01-15',
-          inspector: 'Mumbai Municipal Corporation',
-          notes: 'All documents verified. Property meets safety standards.'
-        },
-        amenities: ['WiFi', 'AC', 'Parking', 'Gym', 'Pool', 'Security'],
-        description: 'Premium apartment with stunning Arabian Sea views in the heart of Bandra West.',
-        images: ['/api/placeholder/400/300'],
-        createdAt: '2024-01-01',
-        lastUpdated: '2024-01-15'
-      },
-      {
-        id: 'p2',
-        title: 'Modern 2BHK in Powai IT Hub',
-        location: 'Powai',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        price: 55000,
-        status: 'available',
-        type: 'Apartment',
-        bedrooms: 2,
-        area: 1200,
-        monthlyRent: 55000,
-        verified: false,
-        amenities: ['WiFi', 'AC', 'Parking', 'Security'],
-        description: 'Modern apartment in the heart of Powai IT hub with excellent connectivity.',
-        images: ['/api/placeholder/400/300'],
-        createdAt: '2024-01-10',
-        lastUpdated: '2024-01-10'
-      }
+      
     ];
 
     const mockTenants: Tenant[] = [
-      {
-        id: 't1',
-        name: 'Rajesh Kumar',
-        phone: '+91-98765-43210',
-        email: 'rajesh.kumar@email.com',
-        rentStartDate: '2024-01-01',
-        rentEndDate: '2024-12-31',
-        monthlyRent: 85000,
-        securityDeposit: 85000,
-        status: 'active',
-        propertyId: 'p1'
-      }
+     
     ];
 
     const mockFinancials: Financial[] = [
-      {
-        month: 'January 2024',
-        rentCollected: 85000,
-        expenses: 15000,
-        netIncome: 70000,
-        properties: 2
-      }
+ 
     ];
 
     setProperties(mockProperties);

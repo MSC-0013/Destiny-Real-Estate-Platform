@@ -44,20 +44,15 @@ const AdminPage = () => {
   };
 
   const recentUsers = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'tenant', joinDate: '2024-03-15', status: 'active' },
-    { id: 2, name: 'Sarah Smith', email: 'sarah@example.com', role: 'landlord', joinDate: '2024-03-14', status: 'active' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', role: 'tenant', joinDate: '2024-03-13', status: 'pending' }
+   
   ];
 
   const recentProperties = [
-    { id: 1, title: 'Modern Studio Apartment', location: 'Manhattan', landlord: 'Sarah Smith', status: 'approved', price: 2500 },
-    { id: 2, title: 'Cozy Brooklyn Loft', location: 'Brooklyn', landlord: 'Mike Chen', status: 'pending', price: 1800 },
-    { id: 3, title: 'Luxury Penthouse', location: 'SoHo', landlord: 'Emma Wilson', status: 'rejected', price: 5000 }
+   
   ];
 
   const complaints = [
-    { id: 1, user: 'John Doe', property: 'Modern Studio', issue: 'Maintenance issue', status: 'open', date: '2024-03-15' },
-    { id: 2, user: 'Jane Smith', property: 'Brooklyn Loft', issue: 'Payment dispute', status: 'resolved', date: '2024-03-14' }
+    
   ];
 
   if (!isAuthorized) {

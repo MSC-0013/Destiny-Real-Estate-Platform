@@ -27,18 +27,29 @@ const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
   : [];
 
-// Allow CORS for allowed origins and localhost
+// Always allow localhost for testing
+allowedOrigins.push("http://localhost:8081"); // frontend dev URL
+allowedOrigins.push("http://127.0.0.1:8081"); // alternative localhost
+
+// CORS options
 const corsOptions = {
   origin: function (origin, callback) {
     // allow requests with no origin (like Postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.warn("Blocked by CORS:", origin);
     return callback(new Error("Not allowed by CORS: " + origin));
   },
   credentials: true,
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
+
+// To handle preflight requests
+app.options("*", cors(corsOptions));
+
 app.use(express.json());
 
 // ================= ROUTES =================
@@ -52,7 +63,6 @@ app.get("/", (_req, res) => {
   });
 });
 
-// Mount auth routes at /auth (so frontend can call /auth/login)
 app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/properties", propertyRoutes);

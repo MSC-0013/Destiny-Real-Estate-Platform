@@ -50,40 +50,11 @@ const TenantDashboard = () => {
 
   // Mock data - in real app this would come from API
   const [bookings, setBookings] = useState<Booking[]>([
-    {
-      id: 'booking-1',
-      propertyId: 'mum-001',
-      property: allProperties[0],
-      startDate: '2024-02-01',
-      endDate: '2024-03-01',
-      totalAmount: 85000,
-      status: 'confirmed',
-      paymentStatus: 'partial',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 'booking-2',
-      propertyId: 'blr-001',
-      property: allProperties[4],
-      startDate: '2024-02-15',
-      endDate: '2024-03-15',
-      totalAmount: 65000,
-      status: 'pending',
-      paymentStatus: 'pending',
-      createdAt: '2024-01-20'
-    }
+  
   ]);
 
   const [constructionRequests, setConstructionRequests] = useState<ConstructionRequest[]>([
-    {
-      id: 'construction-1',
-      propertyType: 'Residential Villa',
-      location: 'Mumbai, Maharashtra',
-      budget: 25000000,
-      timeline: '12-18 months',
-      status: 'pending',
-      createdAt: '2024-01-10'
-    }
+
   ]);
 
   const [favoriteProperties, setFavoriteProperties] = useState<ExpandedProperty[]>(
