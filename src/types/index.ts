@@ -220,3 +220,11 @@ export interface Analytics {
   popularLocations: string[];
   averageRent: number;
 }
+
+// Import Indian properties (your large 1500-line file)
+import indianPropertiesRaw from "../data/indianProperties"; // adjust path if needed
+
+// Cast to Property[] so TypeScript accepts it in state
+export const indianProperties: Property[] = indianPropertiesRaw as Property[];
+
+export default indianProperties;

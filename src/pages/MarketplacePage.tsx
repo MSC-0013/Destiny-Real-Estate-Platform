@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { indianProperties } from '@/data/indianProperties';
 import { 
   Search, 
   Filter, 
@@ -102,33 +103,51 @@ const MarketplacePage = () => {
 
   const propertyTypes = ['Studio', 'Apartment', 'Loft', 'Penthouse', 'House', 'Townhouse', 'Villa', 'Commercial', 'Land'];
 
-  // Fetch properties from backend
-  useEffect(() => {
-    fetchProperties();
-  }, []);
 
-  const fetchProperties = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await api.get('/properties');
-      if (response.data && response.data.properties) {
-        setProperties(response.data.properties);
-        setFilteredProperties(response.data.properties);
-      }
-    } catch (err: any) {
-      console.error('Error fetching properties:', err);
-      setError(err.response?.data?.error || 'Failed to fetch properties');
-      toast({
-        title: "Error",
-        description: "Failed to load properties. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+useEffect(() => {
+  fetchProperties();
+}, []);
+
+const fetchProperties = async () => {
+  setLoading(true);
+  setError(null);
+
+  try {
+    const response = await api.get('/properties');
+
+    if (response.data && response.data.properties) {
+      const mergedProperties = [
+        ...response.data.properties,
+        ...indianProperties.filter(
+          local => !response.data.properties.some(
+            backend => backend.id === local.id
+          )
+        )
+      ];
+
+      setProperties(mergedProperties);
+      setFilteredProperties(mergedProperties);
+    } else {
+      setProperties(indianProperties);
+      setFilteredProperties(indianProperties);
     }
-  };
+  } catch (err: any) {
+    console.error('Error fetching properties:', err);
+    setError(err.response?.data?.error || 'Failed to fetch properties');
+
+    toast({
+      title: "Error",
+      description: "Failed to load properties from server. Using local data.",
+      variant: "destructive"
+    });
+
+    setProperties(indianProperties);
+    setFilteredProperties(indianProperties);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Apply filters
   useEffect(() => {

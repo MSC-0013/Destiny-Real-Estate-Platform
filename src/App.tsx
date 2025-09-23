@@ -71,26 +71,14 @@ const App = () => {
                       <Route path="/listings" element={<ListingsPage />} />
                       <Route path="/marketplace" element={<MarketplacePage />} />
                       <Route path="/construction" element={<ConstructionPage />} />
-                      <Route
-                        path="/construction/model/:id"
-                        element={<ConstructionModelDetailPage />}
-                      />
-                      <Route
-                        path="/construction/chatbot"
-                        element={<ConstructionChatbotPage />}
-                      />
+                      <Route path="/construction/model/:id" element={<ConstructionModelDetailPage />} />
+                      <Route path="/construction/chatbot" element={<ConstructionChatbotPage />} />
                       <Route path="/neighborhoods" element={<NeighborhoodsPage />} />
-                      <Route
-                        path="/neighborhood/:id"
-                        element={<NeighborhoodDetailPage />}
-                      />
+                      <Route path="/neighborhood/:id" element={<NeighborhoodDetailPage />} />
                       <Route path="/forgot-password" element={<h1>Coming Soon...</h1>} />
 
                       {/* Property Routes */}
-                      <Route
-                        path="/property/:id"
-                        element={<PropertyDetailPage />}
-                      />
+                      <Route path="/property/:id" element={<PropertyDetailPage />} />
                       <Route
                         path="/add-property"
                         element={
@@ -109,84 +97,21 @@ const App = () => {
                       />
 
                       {/* User Routes - Protected */}
-                      <Route
-                        path="/dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <DashboardPage />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/tenant-dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <TenantDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/landlord-dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <LandlordDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/admin-dashboard"
-                        element={
-                          <ProtectedRoute requiredRole="admin">
-                            <AdminDashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/profile"
-                        element={
-                          <ProtectedRoute>
-                            <ProfilePage />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/settings"
-                        element={
-                          <ProtectedRoute>
-                            <SettingsPage />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/favorites"
-                        element={
-                          <ProtectedRoute>
-                            <FavoritesPage />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/chat"
-                        element={
-                          <ProtectedRoute>
-                            <ChatPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                      <Route path="/tenant-dashboard" element={<ProtectedRoute><TenantDashboard /></ProtectedRoute>} />
+                      <Route path="/landlord-dashboard" element={<ProtectedRoute><LandlordDashboard /></ProtectedRoute>} />
+                      <Route path="/admin-dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+                      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                      <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
+                      <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 
                       {/* Auth Routes */}
                       <Route path="/login" element={<AuthPage />} />
                       <Route path="/register" element={<AuthPage />} />
 
                       {/* Admin Routes */}
-                      <Route
-                        path="/admin"
-                        element={
-                          <ProtectedRoute requiredRole="admin">
-                            <AdminPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                      <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminPage /></ProtectedRoute>} />
 
                       {/* Help & Info */}
                       <Route path="/help" element={<HelpPage />} />

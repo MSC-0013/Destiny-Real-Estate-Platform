@@ -1,26 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
+import { useNavigate } from "react-router-dom";
 import PropertyCard from '@/components/PropertyCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
+import { indianProperties } from '@/data/indianProperties';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Search, 
-  Filter, 
-  MapPin, 
-  X, 
-  Building, 
-  Users, 
-  Star, 
-  Calendar, 
-  Shield, 
-  CheckCircle, 
+import {
+  Search,
+  Filter,
+  MapPin,
+  X,
+  Building,
+  Users,
+  Star,
+  Calendar,
+  Shield,
+  CheckCircle,
   DollarSign,
   Map,
   Grid3X3,
@@ -90,7 +92,7 @@ const ListingsPage = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,7 @@ const ListingsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [showMap, setShowMap] = useState(false);
-  
+
   const [filters, setFilters] = useState({
     location: searchParams.get('location') || '',
     city: searchParams.get('city') || '',
@@ -130,7 +132,7 @@ const ListingsPage = () => {
     { value: 'sale', label: 'For Sale' }
   ];
 
-  // Fetch properties from backend
+
   useEffect(() => {
     fetchProperties();
   }, []);
@@ -138,25 +140,45 @@ const ListingsPage = () => {
   const fetchProperties = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await api.get('/properties');
+
       if (response.data && response.data.properties) {
-        setProperties(response.data.properties);
-        setFilteredProperties(response.data.properties);
+        // Merge backend with local properties, avoiding duplicates
+        const mergedProperties = [
+          ...response.data.properties,
+          ...indianProperties.filter(
+            local => !response.data.properties.some(
+              backend => backend.id === local.id
+            )
+          )
+        ];
+
+        setProperties(mergedProperties);
+        setFilteredProperties(mergedProperties);
+      } else {
+        // If backend returns nothing, fallback to local
+        setProperties(indianProperties);
+        setFilteredProperties(indianProperties);
       }
     } catch (err: any) {
       console.error('Error fetching properties:', err);
       setError(err.response?.data?.error || 'Failed to fetch properties');
+
       toast({
         title: "Error",
-        description: "Failed to load properties. Please try again.",
+        description: "Failed to load properties from server. Using local data.",
         variant: "destructive"
       });
+
+      setProperties(indianProperties);
+      setFilteredProperties(indianProperties);
     } finally {
       setLoading(false);
     }
   };
+
 
   // Apply filters
   useEffect(() => {
@@ -165,7 +187,7 @@ const ListingsPage = () => {
     // Location filter
     if (filters.location) {
       const searchTerm = filters.location.toLowerCase();
-      filtered = filtered.filter(property => 
+      filtered = filtered.filter(property =>
         property.location.toLowerCase().includes(searchTerm) ||
         property.city.toLowerCase().includes(searchTerm) ||
         property.state.toLowerCase().includes(searchTerm)
@@ -174,20 +196,20 @@ const ListingsPage = () => {
 
     // City filter
     if (filters.city) {
-      filtered = filtered.filter(property => 
+      filtered = filtered.filter(property =>
         property.city.toLowerCase() === filters.city.toLowerCase()
       );
     }
 
     // State filter
     if (filters.state) {
-      filtered = filtered.filter(property => 
+      filtered = filtered.filter(property =>
         property.state.toLowerCase() === filters.state.toLowerCase()
       );
     }
 
     // Price range filter
-    filtered = filtered.filter(property => 
+    filtered = filtered.filter(property =>
       property.price >= filters.priceRange[0] && property.price <= filters.priceRange[1]
     );
 
@@ -221,7 +243,7 @@ const ListingsPage = () => {
 
     // Amenities filter
     if (filters.amenities.length > 0) {
-      filtered = filtered.filter(property => 
+      filtered = filtered.filter(property =>
         filters.amenities.every(amenity => property.amenities.includes(amenity))
       );
     }
@@ -267,10 +289,13 @@ const ListingsPage = () => {
   const handleAmenityChange = (amenity: string, checked: boolean) => {
     setFilters(prev => ({
       ...prev,
-      amenities: checked 
+      amenities: checked
         ? [...prev.amenities, amenity]
         : prev.amenities.filter(a => a !== amenity)
     }));
+  };
+  const handlePropertyClick = (id: string) => {
+    navigate(`/property/${id}`);
   };
 
   const toggleMapView = () => {
@@ -295,7 +320,7 @@ const ListingsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navbar />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -370,7 +395,7 @@ const ListingsPage = () => {
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 flex items-center gap-1">
                   <Building className="w-4 h-4" />
@@ -568,7 +593,7 @@ const ListingsPage = () => {
               {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} found
             </Badge>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'outline'}
@@ -596,9 +621,9 @@ const ListingsPage = () => {
           <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
             <AlertCircle className="w-5 h-5 text-red-500" />
             <span className="text-red-700">{error}</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={fetchProperties}
               className="ml-auto border-red-300 text-red-600 hover:bg-red-50"
             >
@@ -612,8 +637,13 @@ const ListingsPage = () => {
         {filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
+              <div key={property.id} onClick={() => handlePropertyClick(property.id)} style={{ cursor: 'pointer' }}>
+                <PropertyCard
+                  property={property}
+                />
+              </div>
             ))}
+
           </div>
         ) : (
           <div className="text-center py-16">
@@ -627,14 +657,14 @@ const ListingsPage = () => {
               Try adjusting your search criteria or browse all available properties.
             </p>
             <div className="flex gap-4 justify-center">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={clearAllFilters}
                 className="border-slate-300 hover:border-blue-500 hover:text-blue-600"
               >
                 Clear Filters
               </Button>
-              <Button 
+              <Button
                 onClick={fetchProperties}
                 className="bg-blue-600 hover:bg-blue-700"
               >
